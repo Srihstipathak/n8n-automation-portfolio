@@ -1,0 +1,268 @@
+{
+  "name": "RETELL AGENT",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -896,
+        80
+      ],
+      "id": "f0aa0e02-d915-4602-afac-b1c5d7f1ab47",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1HVM9JFn-0lEiL5A8lBNzcZuGV9y-PeA00iLYKpX22WY",
+          "mode": "list",
+          "cachedResultName": "Retell voice agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HVM9JFn-0lEiL5A8lBNzcZuGV9y-PeA00iLYKpX22WY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HVM9JFn-0lEiL5A8lBNzcZuGV9y-PeA00iLYKpX22WY/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -672,
+        80
+      ],
+      "id": "744bbb38-c0aa-4b97-8284-02c14e9a398a",
+      "name": "Get row(s) in sheet"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fab962f0-5bb9-41e6-b84e-de66d6b76e61",
+              "leftValue": "={{ $json['Contact number'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -448,
+        80
+      ],
+      "id": "ddd44ba6-bf1f-4dbc-b3e3-8fb4dfbeab7b",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -224,
+        80
+      ],
+      "id": "a70f389e-ca79-42e1-8fa4-30ad3c61187c",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c47663b0-f773-4077-a7e9-6f5777966b4b",
+      "name": "Wait",
+      "webhookId": "cf4a0101-bed9-414f-9f3a-006c4e4da9c7"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "85925d1f-f87b-445f-8a74-3ba92e68c3d3",
+              "leftValue": "={{ $json.company }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "3c34ab14-242c-4331-a4f7-8b2571bd7858",
+              "leftValue": "={{ $json['Contact number'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        160,
+        0
+      ],
+      "id": "5b6f6daa-2a2e-4529-8972-045a715b9d8f",
+      "name": "Filter1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.retellai.com/create-phone-call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer key_2c0f588738531597cc448e1f9745"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from_number\": \"++1 (770) 343-3566\",\n  \"to_number\": \"+{{ $json['Contact number'] }}\",\n\"override_agent_id\":\"agent_733fa30066aefa6368840cb7f9\",\n  \"override_agent_version\": 1,\n  \"metadata\": {},\n  \"retell_llm_dynamic_variables\": {\n    \"prospect_first_name\":\"{{ $json[' Prospect Name'] }}\",\n    \"company_name\": \"{{ $json.company }}\",\n    \"signal_reference\":\"GO\",\n    \"callback_number\":\"+16789102774\"\n   \n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        432,
+        96
+      ],
+      "id": "d243cb3c-4de6-4ce0-adf1-35a4e703c50e",
+      "name": "Retell AI- Make Call1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Filter1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter1": {
+      "main": [
+        [
+          {
+            "node": "Retell AI- Make Call1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retell AI- Make Call1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5f94b371-e4d4-43da-a5ae-232e0913e04f",
+  "meta": {
+    "instanceId": "a03c7678428ef19ededbf912f16f7d5798ec7b9ab4c17f2a2def6a9e791e7215"
+  },
+  "id": "usTrmuUyxEpZdmMd",
+  "tags": []
+}

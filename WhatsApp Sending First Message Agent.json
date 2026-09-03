@@ -1,0 +1,260 @@
+{
+  "name": "WhatsApp Sending First Message Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1b3StcKXDxoMhrC_XOKBClcKBHtoiWnnGgph3ojoKsUM",
+          "mode": "list",
+          "cachedResultName": "Whatsapp API Testing",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1b3StcKXDxoMhrC_XOKBClcKBHtoiWnnGgph3ojoKsUM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1b3StcKXDxoMhrC_XOKBClcKBHtoiWnnGgph3ojoKsUM/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        -208
+      ],
+      "id": "585325f2-9695-48b9-ae20-1af27376db57",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "scY6HrScCLGtZtd3",
+          "name": "Google Sheets account 18"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "phoneNumberId": "888839237646445",
+        "recipientPhoneNumber": "={{ $json[\"Phone Number\"] }}",
+        "template": "thankyou_message|en",
+        "components": {
+          "component": [
+            {
+              "bodyParameters": {
+                "parameter": [
+                  {
+                    "text": "={{ $json.Name }}"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "header",
+              "headerParameters": {
+                "parameter": [
+                  {
+                    "type": "image"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        -208
+      ],
+      "id": "4ff2f7f4-cef8-4252-8f27-6dd94db1820c",
+      "name": "Send template",
+      "webhookId": "b7e2aa2c-5832-4714-9f85-00faad0a00db",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "ehKkzu4tirVP8Mkw",
+          "name": "WhatsApp account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -208
+      ],
+      "id": "b7df0579-9a85-45fb-9c04-376e07b3c826",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1b3StcKXDxoMhrC_XOKBClcKBHtoiWnnGgph3ojoKsUM",
+          "mode": "list",
+          "cachedResultName": "Whatsapp API Testing",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1b3StcKXDxoMhrC_XOKBClcKBHtoiWnnGgph3ojoKsUM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1b3StcKXDxoMhrC_XOKBClcKBHtoiWnnGgph3ojoKsUM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Phone Number": "={{ $json.contacts[0].wa_id }}",
+            "Queued At": "={{ $now }}",
+            "WABA Message Id": "={{ $json.messages[0].id }}"
+          },
+          "matchingColumns": [
+            "Phone Number"
+          ],
+          "schema": [
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "WABA Message Id",
+              "displayName": "WABA Message Id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Queued At",
+              "displayName": "Queued At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Sent At",
+              "displayName": "Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Delivered At",
+              "displayName": "Delivered At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Read At",
+              "displayName": "Read At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        672,
+        -208
+      ],
+      "id": "0438ab90-f31d-402c-876f-4b4bcbb5d69b",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "scY6HrScCLGtZtd3",
+          "name": "Google Sheets account 18"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send template": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d13fd718-cc09-41be-b7ee-ed93408deb47",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a03c7678428ef19ededbf912f16f7d5798ec7b9ab4c17f2a2def6a9e791e7215"
+  },
+  "id": "UY0wbksK7mYMyf8M",
+  "tags": []
+}

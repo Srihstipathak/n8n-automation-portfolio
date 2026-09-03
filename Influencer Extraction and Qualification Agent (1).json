@@ -1,0 +1,553 @@
+{
+  "name": "Influencer Extraction and Qualification Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1872,
+        80
+      ],
+      "id": "f4285e7c-ee33-4a13-8d22-11abfd124101",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1fshd61BuleLyISF-4EMMT3uZY4g00iFoRg_F7ysedOA",
+          "mode": "list",
+          "cachedResultName": "Rosaa Influencer data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fshd61BuleLyISF-4EMMT3uZY4g00iFoRg_F7ysedOA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fshd61BuleLyISF-4EMMT3uZY4g00iFoRg_F7ysedOA/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1648,
+        80
+      ],
+      "id": "b81162da-6b81-4c29-a1c8-ddeebc9d8eb1",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "scY6HrScCLGtZtd3",
+          "name": "Google Sheets account 18"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1408,
+        80
+      ],
+      "id": "8bead736-e80a-4f17-92a3-d7e12effa61a",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "resource": "Datasets",
+        "datasetId": "={{ $json.defaultDatasetId }}",
+        "limit": 10
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        304
+      ],
+      "id": "9847b27d-3363-4f00-bbb4-cb6839d35ffb",
+      "name": "Get dataset items",
+      "credentials": {
+        "apifyApi": {
+          "id": "IXp7HX0UIGvwPaOF",
+          "name": "Apify account 25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- Define niche keywords ---\nconst niches = {\n  \"beauty\": \"Beauty\",\n  \"makeup\": \"Makeup Artist\",\n  \"skincare\": \"Skincare\",\n  \"lifestyle\": \"Lifestyle\",\n  \"recipe\": \"Recipes\",\n  \"food\": \"Food Blogger\",\n  \"ugc\": \"UGC Creator\",\n  \"digital\": \"Digital Creator\",\n  \"creator\": \"Content Creator\",\n  \"ayurvedic\": \"Ayurvedic Doctors\",\n  \"doctor\": \"Ayurvedic Doctors\",\n  \"educator\": \"Educators\",\n  \"teacher\": \"Educators\",\n  \"gym\": \"Gym Freaks\",\n  \"fitness\": \"Fitness\",\n  \"wellness\": \"Wellness\",\n  \"health\": \"Health & Wellness\"\n};\n\n// --- Format each reel record ---\nreturn $input.all().map(item => {\n  const data = item.json;\n\n  const username = data.ownerUsername || data.username || \"\";\n  const fullName = data.ownerFullName || data.fullName || \"\";\n  const caption = data.caption || \"\";\n  const hashtags = (data.hashtags || []).join(\", \");\n  const reelUrl = data.url || data.videoUrl || \"\";\n  const imageUrl = data.displayUrl || data.thumbnailUrl || \"\";\n  const bio = data.ownerBio || data.biography || \"\";\n  const profileUrl = username ? `https://www.instagram.com/${username}/` : \"\";\n\n  // --- Detect niche ---\n  let niche = \"Unknown\";\n  const text = (caption + \" \" + hashtags + \" \" + bio).toLowerCase();\n  for (const [key, value] of Object.entries(niches)) {\n    if (text.includes(key)) {\n      niche = value;\n      break;\n    }\n  }\n\n  // --- Return clean structured data ---\n  return {\n    json: {\n      Platform: \"Instagram\",\n      Username: username,\n      \"Full Name\": fullName,\n      Niche: niche,\n      Hashtags: hashtags,\n      Caption: caption,\n      \"Reel URL\": reelUrl\n        ? `=HYPERLINK(\"${reelUrl}\", \"View Reel\")`\n        : \"\",\n      \"Profile URL\": profileUrl\n        ? `=HYPERLINK(\"${profileUrl}\", \"View Profile\")`\n        : \"\",\n      \"Thumbnail\": imageUrl\n        ? `=HYPERLINK(\"${imageUrl}\", \"Thumbnail\")`\n        : \"\"\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        304
+      ],
+      "id": "18ff67a2-a940-42ee-9150-810fd91416be",
+      "name": "Code in JavaScript",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "dSCLg0C3YEZ83HzYX",
+          "mode": "list",
+          "cachedResultName": "Instagram Profile Scraper (apify/instagram-profile-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/dSCLg0C3YEZ83HzYX/input"
+        },
+        "customBody": "={\n    \"usernames\": [\n        \"{{ $json['Account / Handle'] }} \"\n    ]\n}\n"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -1168,
+        96
+      ],
+      "id": "0d8102dd-b625-4989-a53e-b28770e361e3",
+      "name": "Run an Actor1",
+      "credentials": {
+        "apifyApi": {
+          "id": "IXp7HX0UIGvwPaOF",
+          "name": "Apify account 25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Datasets",
+        "datasetId": "={{ $json.defaultDatasetId }}"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -944,
+        96
+      ],
+      "id": "e729c0f0-f192-4920-bd4c-93737cf04c80",
+      "name": "Get dataset items1",
+      "credentials": {
+        "apifyApi": {
+          "id": "IXp7HX0UIGvwPaOF",
+          "name": "Apify account 25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mapping keywords to niches\n\nconst niches = {\n\n  \"beauty\": \"Beauty\",\n\n  \"makeup\": \"Makeup Artist\",\n\n  \"skincare\": \"Skincare\",\n\n  \"lifestyle\": \"Lifestyle\",\n\n  \"recipe\": \"Recipes\",\n\n  \"food\": \"Food Blogger\",\n\n  \"ugc\": \"UGC\",\n\n  \"digital\": \"Digital Creator\",\n\n  \"creator\": \"Content Creator\",\n\n  \"ayurvedic\": \"Ayurvedic Doctors\",\n\n  \"doctor\": \"Ayurvedic Doctors\",\n\n  \"educator\": \"Educators\",\n\n  \"teacher\": \"Educators\",\n\n  \"gym\": \"Gym Freaks\",\n\n  \"fitness\": \"Fitness\"\n\n};\n \nreturn items\n\n  .map(item => {\n\n    const data = item.json;\n \n    // Extract fields from Apify output\n\n    const username = data.username || \"\";\n\n    const bio = (data.biography || \"\").toLowerCase();\n\n    const followers = data.followersCount || 0;\n\n    const fullName = data.fullName || \"\";\n\n    const userId = data.id || data.userId || null;\n\n    const location = data.location || \"Bhopal\";\n\n    const profile_url = data.url || \"\";\n \n    // Default niche\n\n    let niche = \"Unknown\";\n \n    // Match niche from username/bio\n\n    for (const [key, value] of Object.entries(niches)) {\n\n      if (username.toLowerCase().includes(key) || bio.includes(key)) {\n\n        niche = value;\n\n        break;\n\n      }\n\n    }\n    // Qualification check\n    const qualified = followers >= 500;\n\n \n    // Only return users with 500+ followers\n\n    if (followers >= 500) {\n\n      return {\n\n        json: {\n\n          userId,\n\n          username,\n\n          fullName,\n\n          followers,\n\n          niche,\n\n          location,\n          \n\n          profile_url,\n           \"Qualification Status\": qualified ? \"Qualified\" : \"Rejected\"\n\n        }\n\n      };\n\n    } else {\n\n      return null; // filtered out\n\n    }\n\n  })\n\n  .filter(Boolean);\n\n "
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        96
+      ],
+      "id": "9ff422e6-af27-43c0-9293-5157bb711d80",
+      "name": "Code in JavaScript1",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1fshd61BuleLyISF-4EMMT3uZY4g00iFoRg_F7ysedOA",
+          "mode": "list",
+          "cachedResultName": "Rosaa Influencer data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fshd61BuleLyISF-4EMMT3uZY4g00iFoRg_F7ysedOA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1308150175,
+          "mode": "list",
+          "cachedResultName": "Sheet3",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fshd61BuleLyISF-4EMMT3uZY4g00iFoRg_F7ysedOA/edit#gid=1308150175"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Account Name",
+              "displayName": "Account Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Caption",
+              "displayName": "Caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Hashtags",
+              "displayName": "Hashtags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Mentions",
+              "displayName": "Mentions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Comments Count",
+              "displayName": "Comments Count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Latest Comment",
+              "displayName": "Latest Comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Post URL",
+              "displayName": "Post URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Extracted On",
+              "displayName": "Extracted On",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -400,
+        304
+      ],
+      "id": "1f9655ed-0979-4606-9975-52c41cc7a1a3",
+      "name": "Append row in sheet1",
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "scY6HrScCLGtZtd3",
+          "name": "Google Sheets account 18"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1fshd61BuleLyISF-4EMMT3uZY4g00iFoRg_F7ysedOA",
+          "mode": "list",
+          "cachedResultName": "Rosaa Influencer data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fshd61BuleLyISF-4EMMT3uZY4g00iFoRg_F7ysedOA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1082965998,
+          "mode": "list",
+          "cachedResultName": "Sheet2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fshd61BuleLyISF-4EMMT3uZY4g00iFoRg_F7ysedOA/edit#gid=1082965998"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Platform",
+              "displayName": "Platform",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Instagram ID",
+              "displayName": "Instagram ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Account Name",
+              "displayName": "Account Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Niches",
+              "displayName": "Niches",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Followers",
+              "displayName": "Followers",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Qualification Status",
+              "displayName": "Qualification Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -464,
+        96
+      ],
+      "id": "6937ffd6-7f22-44b8-844b-6592fc10c7eb",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "scY6HrScCLGtZtd3",
+          "name": "Google Sheets account 18"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "actorId": {
+          "__rl": true,
+          "value": "xMc5Ga1oCONPmWJIa",
+          "mode": "list",
+          "cachedResultName": "Instagram Reel Scraper (apify/instagram-reel-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/xMc5Ga1oCONPmWJIa/input"
+        },
+        "customBody": "={\n    \"includeSharesCount\": false,\n    \"resultsLimit\": 5,\n    \"username\": [\n        \"{{ $json['Profile URL'] }} \"\n    ]\n}"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -1136,
+        304
+      ],
+      "id": "0a6d95e4-e67d-471b-bca2-eddfbb4353c0",
+      "name": "Run an Actor",
+      "credentials": {
+        "apifyApi": {
+          "id": "IXp7HX0UIGvwPaOF",
+          "name": "Apify account 25"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Run an Actor",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Run an Actor1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get dataset items": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run an Actor1": {
+      "main": [
+        [
+          {
+            "node": "Get dataset items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get dataset items1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run an Actor": {
+      "main": [
+        [
+          {
+            "node": "Get dataset items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2fd0e0b8-5255-4ea9-a491-7a68710860dd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a03c7678428ef19ededbf912f16f7d5798ec7b9ab4c17f2a2def6a9e791e7215"
+  },
+  "id": "tuswe6pSrVwSTz0g",
+  "tags": []
+}

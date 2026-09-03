@@ -1,0 +1,217 @@
+{
+  "name": "Facebook_Ads_Spy_Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1376,
+        -160
+      ],
+      "id": "887cba8d-1a4e-4387-be95-5a0e4000b31d",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KBRjlpFiXLazx2k8NclPOxU8qDjZexhC6jZz4tyflMs",
+          "mode": "list",
+          "cachedResultName": "Rossa competitors list",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KBRjlpFiXLazx2k8NclPOxU8qDjZexhC6jZz4tyflMs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KBRjlpFiXLazx2k8NclPOxU8qDjZexhC6jZz4tyflMs/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1168,
+        -160
+      ],
+      "id": "f24475c8-a5e3-4efa-b73b-35773d4d7dc3",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "scY6HrScCLGtZtd3",
+          "name": "Google Sheets account 18"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ads = $items(\"HTTP Request\")[0].json.data || [];\n\nlet html = `\n<style>\n  body { font-family: \"Inter\", Arial, sans-serif; background-color: #fafafa; color: #333; padding: 20px; }\n  h2 { color: #e91e63; }\n  h3 { color: #555; border-bottom: 2px solid #ddd; padding-bottom: 4px; margin-top: 30px; }\n  .competitor-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); padding: 15px 20px; margin-bottom: 15px; }\n  a { color: #007bff; text-decoration: none; }\n</style>\n\n<h2>🌹 Rosaa — Daily Competitor Ads Digest</h2>\n<h3>📊 Competitor Highlights</h3>\n`;\n\nfor (const ad of ads) {\n  // Fix: Always use the correct public URL\n  const snapshotUrl = ad.ad_snapshot_url?.includes(\"render_ad\")\n    ? `https://www.facebook.com/ads/library/?id=${ad.id}`\n    : ad.ad_snapshot_url;\n\n  html += `\n    <div class=\"competitor-card\">\n      <h4>${ad.ad_creative_link_titles?.[0] || \"Untitled\"}</h4>\n      <p><strong>Page ID:</strong> ${ad.page_id || \"N/A\"}</p>\n      <p><strong>Body:</strong> ${ad.ad_creative_bodies?.[0]?.replace(/\\n/g, \"<br>\") || \"—\"}</p>\n      <p><strong>Caption:</strong> ${ad.ad_creative_link_captions?.[0] || \"—\"}</p>\n      <p><strong>Description:</strong> ${ad.ad_creative_link_descriptions?.[0] || \"—\"}</p>\n      <p><strong>Start Date:</strong> ${ad.ad_delivery_start_time || \"—\"} — <strong>End Date:</strong> ${ad.ad_delivery_stop_time || \"Still running\"}</p>\n      <p><a href=\"${snapshotUrl}\" target=\"_blank\">View Ad in Library</a></p>\n    </div>\n  `;\n}\n\nhtml += `\n<p style=\"margin-top:30px; font-size:12px; color:#777;\">\n  Generated automatically by <strong>Rosaa Ads Spy Agent (n8n)</strong>.<br>\n  ${new Date().toLocaleString(\"en-IN\", { timeZone: \"Asia/Kolkata\", dateStyle: \"long\", timeStyle: \"short\" })}\n</p>\n`;\n\nreturn [{ json: { html } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        80
+      ],
+      "id": "54fc0acc-8d29-4711-ba41-529056dcb5c5",
+      "name": "Code in JavaScript",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v24.0/ads_archive",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "search_terms",
+              "value": "={{ $json.Competitor }}"
+            },
+            {
+              "name": "ad_reached_countries",
+              "value": "={{ $json.Country }}"
+            },
+            {
+              "name": "=fields",
+              "value": "=id,ad_creative_bodies,ad_creative_link_titles,ad_creative_link_captions,ad_snapshot_url,ad_delivery_start_time,ad_delivery_stop_time"
+            },
+            {
+              "name": "data_preset",
+              "value": "yesterday"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer EAA6l12xUHmgBP0ZBSzpg7BEFvLOgawaHjJNat8gkD6vSiUZC5o7sSrR4c6Nm8vVwXi33mZBcsNIgU3Xc2FIR5d7oVk54ZCwSQXNClXGfxKaCvPyRrmnLrgO48MCudlBYWqA3IWZCKgxtabFdmNZAlQU6B0jjmOW1y4JZChUhLf5kcDH4mKr0FhoxmF9bWdyTOdN5Jaz7FK40q2Q9ZCG7HyynhZBZAc7oyKsX8sqygbM3PrHUojJrhteKuGR5RaqsSpXG4EZAerZBBkuamKLFBGf1eVla"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -944,
+        -160
+      ],
+      "id": "f1e7beea-5ae3-4c9b-ac51-f1300c069464",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "html": "{{ $json.html }}\n"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -720,
+        80
+      ],
+      "id": "2c636c34-bac3-4911-beaf-fe53a918d83d",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "sendTo": "shuklashree2909@gmail.com",
+        "subject": "=Rosaa — Daily Competitor & Performance Digest ",
+        "message": "={{ $node[\"HTML\"].json.html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -528,
+        80
+      ],
+      "id": "afab5e2c-8fa5-4f85-9ac3-f997c051bccb",
+      "name": "Send a message",
+      "webhookId": "624390da-6ac1-4472-92b8-8e483f333f45",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zQsbjEgq2CrY0Jmt",
+          "name": "Gmail account 5"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b817edd7-e2ab-422b-bda3-6d5948d98ce8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a03c7678428ef19ededbf912f16f7d5798ec7b9ab4c17f2a2def6a9e791e7215"
+  },
+  "id": "uZsorMUwCSBq67et",
+  "tags": []
+}

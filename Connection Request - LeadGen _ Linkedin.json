@@ -1,0 +1,1904 @@
+{
+  "name": "Connection Request - LeadGen | Linkedin",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "workspace_13mbc2c4oiu70a17e1h9z0mxn",
+          "mode": "list",
+          "cachedResultName": "workspace_13mbc2c4oiu70a17e1h9z0mxn"
+        },
+        "table": {
+          "__rl": true,
+          "value": "_linkedinAccount",
+          "mode": "list",
+          "cachedResultName": "_linkedinAccount"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        304,
+        144
+      ],
+      "id": "243b920f-fe1f-455e-9519-694798d98c55",
+      "name": "Get All Linkedin Owner Accounts",
+      "credentials": {
+        "postgres": {
+          "id": "ChaRiXvzj9H5wZtz",
+          "name": "Nebula PGSQL Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "workspace_13mbc2c4oiu70a17e1h9z0mxn",
+          "mode": "list",
+          "cachedResultName": "workspace_13mbc2c4oiu70a17e1h9z0mxn"
+        },
+        "table": {
+          "__rl": true,
+          "value": "_learner",
+          "mode": "list",
+          "cachedResultName": "_learner"
+        },
+        "limit": "={{ $json.totalRemaining }}",
+        "where": {
+          "values": [
+            {
+              "column": "status",
+              "value": "NEW"
+            },
+            {
+              "column": "connectionSent",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        752,
+        144
+      ],
+      "id": "ac7a48e2-ed4b-44f5-a069-02dbe00ef7e4",
+      "name": "Get Candidates to Send Connection",
+      "credentials": {
+        "postgres": {
+          "id": "ChaRiXvzj9H5wZtz",
+          "name": "Nebula PGSQL Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = items.map(i => i.json);\n\nconst accounts = rows\n  .filter(a => a.active === true && a.deletedAt == null)\n  .map(a => {\n    const limit = Number(a.dailyConnectionLimit ?? 0);\n    const sent = Number(a.connectionSentToday ?? 0);\n    const remaining = Math.max(0, limit - sent);\n    return {\n      accountDbId: a.id,     // for updating connectionSentToday\n      accountId: a.accountId, // Unipile account_id\n      remaining,\n    };\n  })\n  .filter(a => a.remaining > 0);\n\nconst totalRemaining = accounts.reduce((s, a) => s + a.remaining, 0);\n\nreturn [{\n  json: { accounts, totalRemaining }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        144
+      ],
+      "id": "1e770f00-f570-4791-9c73-72e2e273b05d",
+      "name": "Compute Remaining Per Account"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- helpers ----\nfunction getPublicId(url) {\n  if (!url) return null;\n  const clean = String(url).trim().split(\"?\")[0].split(\"#\")[0].replace(/\\/+$/, \"\");\n  const m = clean.match(/linkedin\\.com\\/in\\/([^\\/]+)/i);\n  return m?.[1] || null;\n}\n\n// ---- read quota payload ----\nconst quota = $('Compute Remaining Per Account').first().json;\n\nconst accounts = quota.accounts; // [{accountDbId, accountId, remaining}]\n\n// learners come from incoming items (your \"Get Candidates to Send Conne...\" node)\nconst learners = items.map(i => i.json);\n\nif (!accounts.length || !learners.length) return [];\n\n// ---- allocation ----\nconst allocations = new Map(accounts.map(a => [a.accountId, []]));\nlet idx = 0;\nconst target = Math.ceil(learners.length / accounts.length);\n\n// pass 1: each account up to target but not beyond remaining\nfor (const a of accounts) {\n  const take = Math.min(target, a.remaining);\n  for (let k = 0; k < take && idx < learners.length; k++) {\n    allocations.get(a.accountId)?.push(learners[idx++]);\n  }\n}\n\n// pass 2: distribute leftovers round-robin to those with capacity\nlet rr = 0;\nwhile (idx < learners.length) {\n  const a = accounts[rr % accounts.length];\n  const list = allocations.get(a.accountId);\n  if (list.length < a.remaining) list.push(learners[idx++]);\n  rr++;\n  if (rr > 100000) break;\n}\n\n// ---- flatten output jobs + also compute publicId here ----\nconst out = [];\n\nfor (const a of accounts) {\n  const list = allocations.get(a.accountId);\n\n  for (const l of list) {\n    const linkedinUrl = l.profileUrlPrimaryLinkUrl || l.linkedinUrl || null;\n    const publicId = getPublicId(linkedinUrl);\n\n    // skip if we cannot extract a publicId (safety)\n    if (!publicId) continue;\n\n    out.push({\n      json: {\n        accountId: a.accountId,        // Unipile account_id\n        accountDbId: a.accountDbId,    // _linkedinAccount row id\n        learnerId: l.id,\n        learnerName: l.name,\n        linkedinUrl,\n        publicId\n      }\n    });\n  }\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        144
+      ],
+      "id": "727e768b-9aee-4e4d-9e97-02f81a0fee03",
+      "name": "Allocate Candidates to Accounts"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1200,
+        144
+      ],
+      "id": "594a79a4-8b68-4e09-aa47-64a434d6eddb",
+      "name": "Split Profile Batch"
+    },
+    {
+      "parameters": {
+        "url": "=https://api30.unipile.com:16038/api/v1/users/{{ $json.publicId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "account_id",
+              "value": "={{ $json.accountId }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1424,
+        64
+      ],
+      "id": "a3914b5c-9ff2-4571-ac57-b1f65a8f39d7",
+      "name": "Unipile - Get provider_id",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zno6AeiCYvMjHr9j",
+          "name": "Unipile Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api30.unipile.com:16038/api/v1/users/invite",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "provider_id",
+              "value": "={{ $json.provider_id }}"
+            },
+            {
+              "name": "account_id",
+              "value": "={{ $('Split Profile Batch').item.json.accountId }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1648,
+        64
+      ],
+      "id": "5406340d-9f66-41b7-9361-8d1f2c742649",
+      "name": "Unipile - Send Connection Invite",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zno6AeiCYvMjHr9j",
+          "name": "Unipile Account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4e3d0676-50ef-452f-a1de-98158754d4b7",
+              "leftValue": "={{ $json.object }}",
+              "rightValue": "=UserInvitationSent",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1872,
+        -16
+      ],
+      "id": "81a8e279-f67a-49d9-be7b-e21a769e12ed",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.floor(Math.random() * 70 ) }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2544,
+        144
+      ],
+      "id": "4765adfa-ba00-4169-9106-b258b96df8d8",
+      "name": "Random Wait 60-120",
+      "webhookId": "cdf372e1-c585-4e1e-b9af-b36f3797888b"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "value": "workspace_13mbc2c4oiu70a17e1h9z0mxn",
+          "mode": "list",
+          "cachedResultName": "workspace_13mbc2c4oiu70a17e1h9z0mxn"
+        },
+        "table": {
+          "__rl": true,
+          "value": "_learner",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "connectionSent": true,
+            "id": "={{ $('Split Profile Batch').item.json.learnerId }}",
+            "linkedinInvitationId": "={{ $('Unipile - Send Connection Invite').item.json.invitation_id }}",
+            "linkedinProviderId": "={{ $('Unipile - Get provider_id').item.json.provider_id }}",
+            "connectionSentDateTime": "={{ $now }}",
+            "updatedAt": "={{ $now }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "createdAt",
+              "displayName": "createdAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updatedAt",
+              "displayName": "updatedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "deletedAt",
+              "displayName": "deletedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "createdBySource",
+              "displayName": "createdBySource",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "EMAIL",
+                  "value": "EMAIL"
+                },
+                {
+                  "name": "CALENDAR",
+                  "value": "CALENDAR"
+                },
+                {
+                  "name": "WORKFLOW",
+                  "value": "WORKFLOW"
+                },
+                {
+                  "name": "API",
+                  "value": "API"
+                },
+                {
+                  "name": "IMPORT",
+                  "value": "IMPORT"
+                },
+                {
+                  "name": "MANUAL",
+                  "value": "MANUAL"
+                },
+                {
+                  "name": "SYSTEM",
+                  "value": "SYSTEM"
+                },
+                {
+                  "name": "WEBHOOK",
+                  "value": "WEBHOOK"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "createdByWorkspaceMemberId",
+              "displayName": "createdByWorkspaceMemberId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "createdByName",
+              "displayName": "createdByName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "createdByContext",
+              "displayName": "createdByContext",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "position",
+              "displayName": "position",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "searchVector",
+              "displayName": "searchVector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "profileUrlPrimaryLinkLabel",
+              "displayName": "profileUrlPrimaryLinkLabel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "profileUrlPrimaryLinkUrl",
+              "displayName": "profileUrlPrimaryLinkUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "profileUrlSecondaryLinks",
+              "displayName": "profileUrlSecondaryLinks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "emailPrimaryEmail",
+              "displayName": "emailPrimaryEmail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "emailAdditionalEmails",
+              "displayName": "emailAdditionalEmails",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contactNumberPrimaryPhoneNumber",
+              "displayName": "contactNumberPrimaryPhoneNumber",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contactNumberPrimaryPhoneCountryCode",
+              "displayName": "contactNumberPrimaryPhoneCountryCode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contactNumberPrimaryPhoneCallingCode",
+              "displayName": "contactNumberPrimaryPhoneCallingCode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contactNumberAdditionalPhones",
+              "displayName": "contactNumberAdditionalPhones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "currentRole",
+              "displayName": "currentRole",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yearsOfExperience",
+              "displayName": "yearsOfExperience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "companyName",
+              "displayName": "companyName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "companyUrlPrimaryLinkLabel",
+              "displayName": "companyUrlPrimaryLinkLabel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "companyUrlPrimaryLinkUrl",
+              "displayName": "companyUrlPrimaryLinkUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "companyUrlSecondaryLinks",
+              "displayName": "companyUrlSecondaryLinks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "workingStatus",
+              "displayName": "workingStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "trackName",
+              "displayName": "trackName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "owner",
+              "displayName": "owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "toolsUsed",
+              "displayName": "toolsUsed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "targetProductServices",
+              "displayName": "targetProductServices",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "course",
+              "displayName": "course",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "learnerOwnerId",
+              "displayName": "learnerOwnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "notesOnCandidate",
+              "displayName": "notesOnCandidate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "raw",
+              "displayName": "raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "BEGINNER",
+                  "value": "BEGINNER"
+                },
+                {
+                  "name": "INTERMEDIATE",
+                  "value": "INTERMEDIATE"
+                },
+                {
+                  "name": "ADVANCED",
+                  "value": "ADVANCED"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "createdDate",
+              "displayName": "createdDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updateDate",
+              "displayName": "updateDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "statusFunnel",
+              "displayName": "statusFunnel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "SUBSCRIBER",
+                  "value": "SUBSCRIBER"
+                },
+                {
+                  "name": "SUSPECT",
+                  "value": "SUSPECT"
+                },
+                {
+                  "name": "LEAD",
+                  "value": "LEAD"
+                },
+                {
+                  "name": "MQL",
+                  "value": "MQL"
+                },
+                {
+                  "name": "SQL",
+                  "value": "SQL"
+                },
+                {
+                  "name": "CUSTOMER",
+                  "value": "CUSTOMER"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "trainingProfile",
+              "displayName": "trainingProfile",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "AI_BUSINESS_CONSULTANT_ACUMATICA_FC",
+                  "value": "AI_BUSINESS_CONSULTANT_ACUMATICA_FC"
+                },
+                {
+                  "name": "AI_ERP_DEVELOPER_ACUMATICA_TC",
+                  "value": "AI_ERP_DEVELOPER_ACUMATICA_TC"
+                },
+                {
+                  "name": "AI_FULL_STACK_DEVELOPER",
+                  "value": "AI_FULL_STACK_DEVELOPER"
+                },
+                {
+                  "name": "AI_AGENT_ENGINEER",
+                  "value": "AI_AGENT_ENGINEER"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "experienceLevel",
+              "displayName": "experienceLevel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "INTERN",
+                  "value": "INTERN"
+                },
+                {
+                  "name": "ENTRY_LEVEL_2_YEARS",
+                  "value": "ENTRY_LEVEL_2_YEARS"
+                },
+                {
+                  "name": "MID_LEVEL_2_5_YEARS",
+                  "value": "MID_LEVEL_2_5_YEARS"
+                },
+                {
+                  "name": "SENIOR_LEVEL_5_YEARS",
+                  "value": "SENIOR_LEVEL_5_YEARS"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "linkedinStatus",
+              "displayName": "linkedinStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "OPT1ST_DEGREE",
+                  "value": "OPT1ST_DEGREE"
+                },
+                {
+                  "name": "OPT2ND_DEGREE",
+                  "value": "OPT2ND_DEGREE"
+                },
+                {
+                  "name": "OPT3RD_DEGREE",
+                  "value": "OPT3RD_DEGREE"
+                },
+                {
+                  "name": "NO_LINKEDIN",
+                  "value": "NO_LINKEDIN"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "linkedinPrimaryContactId",
+              "displayName": "linkedinPrimaryContactId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sourcePlatform",
+              "displayName": "sourcePlatform",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "FACEBOOK",
+                  "value": "FACEBOOK"
+                },
+                {
+                  "name": "INDEED",
+                  "value": "INDEED"
+                },
+                {
+                  "name": "INSTAGRAM",
+                  "value": "INSTAGRAM"
+                },
+                {
+                  "name": "LINKEDIN",
+                  "value": "LINKEDIN"
+                },
+                {
+                  "name": "FORCE_MULTIPLIER",
+                  "value": "FORCE_MULTIPLIER"
+                },
+                {
+                  "name": "LINKEDIN_SALES_NAVIGATOR",
+                  "value": "LINKEDIN_SALES_NAVIGATOR"
+                },
+                {
+                  "name": "NAUKRI",
+                  "value": "NAUKRI"
+                },
+                {
+                  "name": "QUORA",
+                  "value": "QUORA"
+                },
+                {
+                  "name": "REDDIT",
+                  "value": "REDDIT"
+                },
+                {
+                  "name": "TWITTER",
+                  "value": "TWITTER"
+                },
+                {
+                  "name": "HR_DATABASE",
+                  "value": "HR_DATABASE"
+                },
+                {
+                  "name": "WHATSAPP",
+                  "value": "WHATSAPP"
+                },
+                {
+                  "name": "INTERNAL_EMPLOYEE_REFERENCE",
+                  "value": "INTERNAL_EMPLOYEE_REFERENCE"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "referredByEmployeeName",
+              "displayName": "referredByEmployeeName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "NOT_CONTACTED",
+                  "value": "NOT_CONTACTED"
+                },
+                {
+                  "name": "SUSPECT_INTERESTED",
+                  "value": "SUSPECT_INTERESTED"
+                },
+                {
+                  "name": "SUSPECT_NOT_INTERESTED",
+                  "value": "SUSPECT_NOT_INTERESTED"
+                },
+                {
+                  "name": "NO_RESPONSE",
+                  "value": "NO_RESPONSE"
+                },
+                {
+                  "name": "NEW",
+                  "value": "NEW"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "trackId",
+              "displayName": "trackId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "TA001_GROUP_MEMBER_SCRAPER",
+                  "value": "TA001_GROUP_MEMBER_SCRAPER"
+                },
+                {
+                  "name": "TA002_CONNECTION_S_CONNECTION_SIMILAR_PROFILE",
+                  "value": "TA002_CONNECTION_S_CONNECTION_SIMILAR_PROFILE"
+                },
+                {
+                  "name": "TA003_HR_DATABASE",
+                  "value": "TA003_HR_DATABASE"
+                },
+                {
+                  "name": "TA004_KEYWORD_SEARCH_COURSE_ON_GENERAL_SEARCH",
+                  "value": "TA004_KEYWORD_SEARCH_COURSE_ON_GENERAL_SEARCH"
+                },
+                {
+                  "name": "TA005_PAGES_ALUMINI",
+                  "value": "TA005_PAGES_ALUMINI"
+                },
+                {
+                  "name": "TA006_JOB_POSTING_RESPONSES",
+                  "value": "TA006_JOB_POSTING_RESPONSES"
+                },
+                {
+                  "name": "TA007_LEARNER_REFERENCE",
+                  "value": "TA007_LEARNER_REFERENCE"
+                },
+                {
+                  "name": "TA008_LEADGEN_AUTOMATION",
+                  "value": "TA008_LEADGEN_AUTOMATION"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "connectionSent",
+              "displayName": "connectionSent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "connectionAccepted",
+              "displayName": "connectionAccepted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "connectionAcceptedDatetime",
+              "displayName": "connectionAcceptedDatetime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "linkedinProviderId",
+              "displayName": "linkedinProviderId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedinInvitationId",
+              "displayName": "linkedinInvitationId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "connectionSentDateTime",
+              "displayName": "connectionSentDateTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2096,
+        -80
+      ],
+      "id": "fc2e54b3-d670-4a78-8aa0-0cf19e47b2db",
+      "name": "Update Learner (Invite Sent)",
+      "credentials": {
+        "postgres": {
+          "id": "ChaRiXvzj9H5wZtz",
+          "name": "Nebula PGSQL Account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        80,
+        48
+      ],
+      "id": "393c89e4-b6c6-4ca8-a8d7-7ac6a1e8d36c",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        240
+      ],
+      "id": "52a9f3b6-4182-4b2e-bd7f-00f8a0409e6a",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE workspace_13mbc2c4oiu70a17e1h9z0mxn.\"_linkedinAccount\"\nSET\n  \"connectionSentToday\" = COALESCE(\"connectionSentToday\", 0) + 1,\n  \"lastUsed\" = NOW(),\n  \"updatedAt\" = NOW()\nWHERE id = '{{ $('Split Profile Batch').item.json.accountDbId }}';\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2320,
+        -80
+      ],
+      "id": "acc96062-d2ae-4665-b838-d8aba2a84553",
+      "name": "Update Connection Limit On Accounts",
+      "credentials": {
+        "postgres": {
+          "id": "ChaRiXvzj9H5wZtz",
+          "name": "Nebula PGSQL Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "### 🔄 How It Works\n\n1️⃣ Trigger\n• Runs manually or via schedule.\n• Typically executed once daily.\n\n2️⃣ Fetch LinkedIn Accounts\n• Retrieves active accounts from Nebula.\n• Calculates remaining daily quota:\n  remaining = dailyConnectionLimit - connectionSentToday.\n\n3️⃣ Fetch Eligible Learners\n• connectionSent = FALSE\n• profileUrlPrimaryLinkUrl exists\n• deletedAt IS NULL\n\n4️⃣ Allocate Candidates\n• Even distribution across accounts.\n• Never exceeds remaining quota.\n• Extracts LinkedIn publicId from URL.\n\n5️⃣ Send Invitation (Unipile)\n• Convert publicId → provider_id.\n• Send connection invite.\n• Receives invitation_id.\n\n6️⃣ CRM Update\n• connectionSent = TRUE\n• Store provider_id\n• Store invitation_id\n• Update connectionSentDatetime\n• Increment account counter.\n\n7️⃣ Rate Limiting\n• Wait 60–120 seconds.\n• Sequential execution (Split in Batches).",
+        "height": 736,
+        "width": 3232,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -432,
+        -288
+      ],
+      "typeVersion": 1,
+      "id": "9601e3ce-721b-4d6d-a12e-f1428d4f3d8d",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "# Automate LinkedIn connection requests across multiple accounts\nwhile respecting daily sending limits and preventing duplicates.\n\n## Goals:\n• Distribute requests evenly across accounts.\n• Prevent exceeding daily connection limits.\n• Store full traceability (provider_id + invitation_id).\n• Maintain safe rate-limited execution.\n• Keep Nebula CRM fully synchronized.",
+        "height": 656,
+        "width": 2784,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -16,
+        -240
+      ],
+      "typeVersion": 1,
+      "id": "d95ce2d3-4b95-41b3-a894-980766b238da",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## 🎯 Objective\n\n- This workflow automates sending LinkedIn connection requests\n- from multiple accounts while enforcing daily limits,\n- ensuring even distribution, and maintaining full CRM traceability\n- inside the Nebula (Learner) module.\n",
+        "height": 192,
+        "width": 496,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -144,
+        -496
+      ],
+      "typeVersion": 1,
+      "id": "9a0ad356-161d-4fc4-b4ca-42c3634f8887",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## ⚙️  Important Notes\n\n• Sequential sending (1 invite at a time).\n• Random delay between 60–120 seconds.\n• Account limits enforced before allocation.\n• Workflow guarantees no duplicate sending.\n• Invitation ID stored for webhook-based future updates.\n• connectionSentToday must be reset daily.",
+        "height": 192,
+        "width": 704,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        368,
+        -496
+      ],
+      "typeVersion": 1,
+      "id": "456c7b06-62fc-43f7-beb2-5a039abc54a9",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "### LinkedIn Multi-Account Connection Automation\n\nTrigger → Accounts → Quota → Learners → Allocation\n→ Split → Get Provider → Invite → IF\n→ Update CRM → Update Account → Wait → Loop\n",
+        "height": 144,
+        "width": 704,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -144,
+        -656
+      ],
+      "typeVersion": 1,
+      "id": "9377e32b-ecff-42b8-bc21-2e79546ab6a6",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "Accounts Source: _linkedinAccount\nLearner Source: _learner\n\nUnipile Flow:\nGET /users/{publicId}\nPOST /users/invite\n\nData Stored:\n• linkedinProviderId\n• linkedinInvitationId\n• connectionSentDatetime\n\nSafety:\n✓ Daily quota enforcement\n✓ Random wait (60–120s)\n✓ Sequential processing\n✓ CRM state consistency",
+        "height": 352,
+        "width": 278
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -432,
+        -656
+      ],
+      "typeVersion": 1,
+      "id": "101bcd84-9594-4874-bee4-2c6b2517c554",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {
+    "Get All Linkedin Owner Accounts": [
+      {
+        "json": {
+          "id": "d1a73b5c-f430-48e9-81f0-d0ca398a7d36",
+          "name": "Yash Shrivastava",
+          "createdAt": "2026-02-13T09:26:13.317Z",
+          "updatedAt": "2026-02-13T09:39:58.585Z",
+          "deletedAt": null,
+          "createdBySource": "MANUAL",
+          "createdByWorkspaceMemberId": "ff51b9c1-b8be-4651-ac7d-fd785474c323",
+          "createdByName": " ",
+          "createdByContext": {},
+          "position": 0,
+          "searchVector": "'shrivastava':2 'yash':1",
+          "lastUsed": null,
+          "accountId": "Y6p5W8lQRZ6t4cuUGxj3bg",
+          "dailyConnectionLimit": 2,
+          "connectionSentToday": 0,
+          "active": true,
+          "linkedinAccountOwnerId": "1b093283-beda-48f0-98c6-e8a6bbf22624"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "id": "f7d24b2c-0ffa-480b-ab19-5474742fd165",
+          "name": "Swapnil Mandloi",
+          "createdAt": "2026-02-13T09:50:43.615Z",
+          "updatedAt": "2026-02-13T09:56:18.178Z",
+          "deletedAt": null,
+          "createdBySource": "MANUAL",
+          "createdByWorkspaceMemberId": "ff51b9c1-b8be-4651-ac7d-fd785474c323",
+          "createdByName": " ",
+          "createdByContext": {},
+          "position": -1,
+          "searchVector": "'mandloi':2 'swapnil':1",
+          "lastUsed": null,
+          "accountId": "FREJ6zGeSp2h-f8fBi6TsQ",
+          "dailyConnectionLimit": 2,
+          "connectionSentToday": 0,
+          "active": true,
+          "linkedinAccountOwnerId": null
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Get Candidates to Send Connection": [
+      {
+        "json": {
+          "id": "3c851519-dd13-4646-b51a-7df2545fd7e3",
+          "name": "Harrshan S",
+          "createdAt": "2026-02-11T17:04:43.750Z",
+          "updatedAt": "2026-02-11T17:04:43.750Z",
+          "deletedAt": null,
+          "createdBySource": "API",
+          "createdByWorkspaceMemberId": null,
+          "createdByName": "LeadGen Automation",
+          "createdByContext": {},
+          "position": -17407.666666666668,
+          "searchVector": "'harrshan':1 's':2",
+          "profileUrlPrimaryLinkLabel": "",
+          "profileUrlPrimaryLinkUrl": "https://www.linkedin.com/in/harrshan-s",
+          "profileUrlSecondaryLinks": null,
+          "emailPrimaryEmail": "",
+          "emailAdditionalEmails": null,
+          "contactNumberPrimaryPhoneNumber": "",
+          "contactNumberPrimaryPhoneCountryCode": "IN",
+          "contactNumberPrimaryPhoneCallingCode": "+91",
+          "contactNumberAdditionalPhones": null,
+          "currentRole": "",
+          "location": "",
+          "yearsOfExperience": "",
+          "companyName": "",
+          "companyUrlPrimaryLinkLabel": "",
+          "companyUrlPrimaryLinkUrl": "",
+          "companyUrlSecondaryLinks": null,
+          "message": "",
+          "workingStatus": "",
+          "trackName": "",
+          "date": null,
+          "owner": "",
+          "toolsUsed": "",
+          "targetProductServices": "",
+          "course": "",
+          "learnerOwnerId": null,
+          "notesOnCandidate": "",
+          "raw": null,
+          "createdDate": "2026-02-11T00:00:00.000Z",
+          "updateDate": "2026-02-11T00:00:00.000Z",
+          "statusFunnel": "SUBSCRIBER",
+          "trainingProfile": "AI_BUSINESS_CONSULTANT_ACUMATICA_FC",
+          "experienceLevel": "INTERN",
+          "linkedinStatus": "NO_LINKEDIN",
+          "linkedinPrimaryContactId": null,
+          "sourcePlatform": "LINKEDIN",
+          "referredByEmployeeName": "",
+          "status": "NEW",
+          "trackId": "TA008_LEADGEN_AUTOMATION",
+          "connectionSent": false,
+          "connectionAccepted": false,
+          "connectionAcceptedDatetime": null
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "id": "a5b089db-f03b-4e70-a428-35eb47e64c91",
+          "name": "Jay Saraswat",
+          "createdAt": "2026-02-11T17:04:43.929Z",
+          "updatedAt": "2026-02-11T17:04:43.929Z",
+          "deletedAt": null,
+          "createdBySource": "API",
+          "createdByWorkspaceMemberId": null,
+          "createdByName": "LeadGen Automation",
+          "createdByContext": {},
+          "position": -17407.666666666668,
+          "searchVector": "'jay':1 'saraswat':2",
+          "profileUrlPrimaryLinkLabel": "",
+          "profileUrlPrimaryLinkUrl": "https://www.linkedin.com/in/jay-saraswat-0a5812334",
+          "profileUrlSecondaryLinks": null,
+          "emailPrimaryEmail": "",
+          "emailAdditionalEmails": null,
+          "contactNumberPrimaryPhoneNumber": "",
+          "contactNumberPrimaryPhoneCountryCode": "IN",
+          "contactNumberPrimaryPhoneCallingCode": "+91",
+          "contactNumberAdditionalPhones": null,
+          "currentRole": "",
+          "location": "",
+          "yearsOfExperience": "",
+          "companyName": "",
+          "companyUrlPrimaryLinkLabel": "",
+          "companyUrlPrimaryLinkUrl": "",
+          "companyUrlSecondaryLinks": null,
+          "message": "",
+          "workingStatus": "",
+          "trackName": "",
+          "date": null,
+          "owner": "",
+          "toolsUsed": "",
+          "targetProductServices": "",
+          "course": "",
+          "learnerOwnerId": null,
+          "notesOnCandidate": "",
+          "raw": null,
+          "createdDate": "2026-02-11T00:00:00.000Z",
+          "updateDate": "2026-02-11T00:00:00.000Z",
+          "statusFunnel": "SUBSCRIBER",
+          "trainingProfile": "AI_BUSINESS_CONSULTANT_ACUMATICA_FC",
+          "experienceLevel": "INTERN",
+          "linkedinStatus": "NO_LINKEDIN",
+          "linkedinPrimaryContactId": null,
+          "sourcePlatform": "LINKEDIN",
+          "referredByEmployeeName": "",
+          "status": "NEW",
+          "trackId": "TA008_LEADGEN_AUTOMATION",
+          "connectionSent": false,
+          "connectionAccepted": false,
+          "connectionAcceptedDatetime": null
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "id": "c1e4e4ef-07bb-489a-a94d-0d8c910eb019",
+          "name": "Dr.Pavan Kumar M V N R",
+          "createdAt": "2026-02-11T17:04:43.699Z",
+          "updatedAt": "2026-02-13T07:21:26.089Z",
+          "deletedAt": "2026-02-13T07:21:26.089Z",
+          "createdBySource": "API",
+          "createdByWorkspaceMemberId": null,
+          "createdByName": "LeadGen Automation",
+          "createdByContext": {},
+          "position": -17407.666666666668,
+          "searchVector": "'dr.pavan':1 'kumar':2 'm':3 'n':5 'r':6 'v':4",
+          "profileUrlPrimaryLinkLabel": "",
+          "profileUrlPrimaryLinkUrl": "https://www.linkedin.com/in/pavankumarmvnr",
+          "profileUrlSecondaryLinks": null,
+          "emailPrimaryEmail": "",
+          "emailAdditionalEmails": null,
+          "contactNumberPrimaryPhoneNumber": "",
+          "contactNumberPrimaryPhoneCountryCode": "IN",
+          "contactNumberPrimaryPhoneCallingCode": "+91",
+          "contactNumberAdditionalPhones": null,
+          "currentRole": "",
+          "location": "",
+          "yearsOfExperience": "",
+          "companyName": "",
+          "companyUrlPrimaryLinkLabel": "",
+          "companyUrlPrimaryLinkUrl": "",
+          "companyUrlSecondaryLinks": null,
+          "message": "",
+          "workingStatus": "",
+          "trackName": "",
+          "date": null,
+          "owner": "",
+          "toolsUsed": "",
+          "targetProductServices": "",
+          "course": "",
+          "learnerOwnerId": null,
+          "notesOnCandidate": "",
+          "raw": null,
+          "createdDate": "2026-02-11T00:00:00.000Z",
+          "updateDate": "2026-02-11T00:00:00.000Z",
+          "statusFunnel": "SUBSCRIBER",
+          "trainingProfile": "AI_BUSINESS_CONSULTANT_ACUMATICA_FC",
+          "experienceLevel": "INTERN",
+          "linkedinStatus": "NO_LINKEDIN",
+          "linkedinPrimaryContactId": null,
+          "sourcePlatform": "LINKEDIN",
+          "referredByEmployeeName": "",
+          "status": "NEW",
+          "trackId": "TA008_LEADGEN_AUTOMATION",
+          "connectionSent": false,
+          "connectionAccepted": false,
+          "connectionAcceptedDatetime": null
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "id": "f5b3da9c-5fec-47a0-aa39-eb56ee7eb8ac",
+          "name": "Harsh Yadav",
+          "createdAt": "2026-02-11T17:04:43.769Z",
+          "updatedAt": "2026-02-11T17:04:43.769Z",
+          "deletedAt": null,
+          "createdBySource": "API",
+          "createdByWorkspaceMemberId": null,
+          "createdByName": "LeadGen Automation",
+          "createdByContext": {},
+          "position": -17407.666666666668,
+          "searchVector": "'harsh':1 'yadav':2",
+          "profileUrlPrimaryLinkLabel": "",
+          "profileUrlPrimaryLinkUrl": "https://www.linkedin.com/in/harsh-yadav-90129328b",
+          "profileUrlSecondaryLinks": null,
+          "emailPrimaryEmail": "",
+          "emailAdditionalEmails": null,
+          "contactNumberPrimaryPhoneNumber": "",
+          "contactNumberPrimaryPhoneCountryCode": "IN",
+          "contactNumberPrimaryPhoneCallingCode": "+91",
+          "contactNumberAdditionalPhones": null,
+          "currentRole": "",
+          "location": "",
+          "yearsOfExperience": "",
+          "companyName": "",
+          "companyUrlPrimaryLinkLabel": "",
+          "companyUrlPrimaryLinkUrl": "",
+          "companyUrlSecondaryLinks": null,
+          "message": "",
+          "workingStatus": "",
+          "trackName": "",
+          "date": null,
+          "owner": "",
+          "toolsUsed": "",
+          "targetProductServices": "",
+          "course": "",
+          "learnerOwnerId": null,
+          "notesOnCandidate": "",
+          "raw": null,
+          "createdDate": "2026-02-11T00:00:00.000Z",
+          "updateDate": "2026-02-11T00:00:00.000Z",
+          "statusFunnel": "SUBSCRIBER",
+          "trainingProfile": "AI_BUSINESS_CONSULTANT_ACUMATICA_FC",
+          "experienceLevel": "INTERN",
+          "linkedinStatus": "NO_LINKEDIN",
+          "linkedinPrimaryContactId": null,
+          "sourcePlatform": "LINKEDIN",
+          "referredByEmployeeName": "",
+          "status": "NEW",
+          "trackId": "TA008_LEADGEN_AUTOMATION",
+          "connectionSent": false,
+          "connectionAccepted": false,
+          "connectionAcceptedDatetime": null
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Compute Remaining Per Account": [
+      {
+        "json": {
+          "accounts": [
+            {
+              "accountDbId": "d1a73b5c-f430-48e9-81f0-d0ca398a7d36",
+              "accountId": "Y6p5W8lQRZ6t4cuUGxj3bg",
+              "remaining": 2
+            },
+            {
+              "accountDbId": "f7d24b2c-0ffa-480b-ab19-5474742fd165",
+              "accountId": "FREJ6zGeSp2h-f8fBi6TsQ",
+              "remaining": 2
+            }
+          ],
+          "totalRemaining": 4
+        }
+      }
+    ],
+    "Unipile - Get provider_id": [
+      {
+        "json": {
+          "object": "UserProfile",
+          "provider": "LINKEDIN",
+          "provider_id": "ACoAAD8xxVwBKDTms9daIwrnNvWYPW_5x7eJx6E",
+          "public_identifier": "harrshan-s",
+          "member_urn": "1060226396",
+          "first_name": "Harrshan",
+          "last_name": "S",
+          "headline": "Computer science student | Cyber Security Enthusiast | Member @HerAura Community | Undergrad @DSATM",
+          "primary_locale": {
+            "country": "US",
+            "language": "en"
+          },
+          "is_open_profile": false,
+          "is_premium": false,
+          "is_influencer": false,
+          "is_creator": false,
+          "is_relationship": false,
+          "network_distance": "THIRD_DEGREE",
+          "is_self": false,
+          "websites": [],
+          "follower_count": 323,
+          "connections_count": 324,
+          "location": "Bangalore Urban, Karnataka, India",
+          "birthdate": {
+            "month": 6,
+            "day": 9
+          },
+          "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQEfWtyTzjsqzQ/profile-displayphoto-shrink_100_100/B56ZTCzfxqGoAU-/0/1738435067942?e=1772668800&v=beta&t=7tYaoxYnXOMtku_QuAMgnNQvATQtqCPLys1vY7hztHY",
+          "profile_picture_url_large": "https://media.licdn.com/dms/image/v2/D5603AQEfWtyTzjsqzQ/profile-displayphoto-shrink_800_800/B56ZTCzfxqGoAc-/0/1738435067973?e=1772668800&v=beta&t=8IRjERRLjl8TWWsj2zDTqXvpQ6bTs4nV4h37UfYdkOQ",
+          "background_picture_url": "https://media.licdn.com/dms/image/v2/D5616AQETzSj-C8FW7Q/profile-displaybackgroundimage-shrink_200_800/B56ZaHHupcHgAU-/0/1746023673069?e=1772668800&v=beta&t=xZ78oJPB4MzxdMzWVDLMDpCETjTN8Cfd3GkAuemO88w",
+          "pronoun": "He/Him"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Allocate Candidates to Accounts": [
+      {
+        "json": {
+          "accountId": "Y6p5W8lQRZ6t4cuUGxj3bg",
+          "accountDbId": "d1a73b5c-f430-48e9-81f0-d0ca398a7d36",
+          "learnerId": "3c851519-dd13-4646-b51a-7df2545fd7e3",
+          "learnerName": "Harrshan S",
+          "linkedinUrl": "https://www.linkedin.com/in/harrshan-s",
+          "publicId": "harrshan-s"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "accountId": "Y6p5W8lQRZ6t4cuUGxj3bg",
+          "accountDbId": "d1a73b5c-f430-48e9-81f0-d0ca398a7d36",
+          "learnerId": "a5b089db-f03b-4e70-a428-35eb47e64c91",
+          "learnerName": "Jay Saraswat",
+          "linkedinUrl": "https://www.linkedin.com/in/jay-saraswat-0a5812334",
+          "publicId": "jay-saraswat-0a5812334"
+        },
+        "pairedItem": {
+          "item": 1
+        }
+      },
+      {
+        "json": {
+          "accountId": "FREJ6zGeSp2h-f8fBi6TsQ",
+          "accountDbId": "f7d24b2c-0ffa-480b-ab19-5474742fd165",
+          "learnerId": "c1e4e4ef-07bb-489a-a94d-0d8c910eb019",
+          "learnerName": "Dr.Pavan Kumar M V N R",
+          "linkedinUrl": "https://www.linkedin.com/in/pavankumarmvnr",
+          "publicId": "pavankumarmvnr"
+        },
+        "pairedItem": {
+          "item": 2
+        }
+      },
+      {
+        "json": {
+          "accountId": "FREJ6zGeSp2h-f8fBi6TsQ",
+          "accountDbId": "f7d24b2c-0ffa-480b-ab19-5474742fd165",
+          "learnerId": "f5b3da9c-5fec-47a0-aa39-eb56ee7eb8ac",
+          "learnerName": "Harsh Yadav",
+          "linkedinUrl": "https://www.linkedin.com/in/harsh-yadav-90129328b",
+          "publicId": "harsh-yadav-90129328b"
+        },
+        "pairedItem": {
+          "item": 3
+        }
+      }
+    ],
+    "Unipile - Send Connection Invite": [
+      {
+        "json": {
+          "object": "UserInvitationSent",
+          "invitation_id": "7428024214030573568"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Update Learner (Invite Sent)": [
+      {
+        "json": {
+          "id": "3c851519-dd13-4646-b51a-7df2545fd7e3",
+          "name": "Harrshan S",
+          "createdAt": "2026-02-11T17:04:43.750Z",
+          "updatedAt": "2026-02-13T12:07:00.968Z",
+          "deletedAt": null,
+          "createdBySource": "API",
+          "createdByWorkspaceMemberId": null,
+          "createdByName": "LeadGen Automation",
+          "createdByContext": {},
+          "position": -17407.666666666668,
+          "searchVector": "'harrshan':1 's':2",
+          "profileUrlPrimaryLinkLabel": "",
+          "profileUrlPrimaryLinkUrl": "https://www.linkedin.com/in/harrshan-s",
+          "profileUrlSecondaryLinks": null,
+          "emailPrimaryEmail": "",
+          "emailAdditionalEmails": null,
+          "contactNumberPrimaryPhoneNumber": "",
+          "contactNumberPrimaryPhoneCountryCode": "IN",
+          "contactNumberPrimaryPhoneCallingCode": "+91",
+          "contactNumberAdditionalPhones": null,
+          "currentRole": "",
+          "location": "",
+          "yearsOfExperience": "",
+          "companyName": "",
+          "companyUrlPrimaryLinkLabel": "",
+          "companyUrlPrimaryLinkUrl": "",
+          "companyUrlSecondaryLinks": null,
+          "message": "",
+          "workingStatus": "",
+          "trackName": "",
+          "date": null,
+          "owner": "",
+          "toolsUsed": "",
+          "targetProductServices": "",
+          "course": "",
+          "learnerOwnerId": null,
+          "notesOnCandidate": "",
+          "raw": null,
+          "createdDate": "2026-02-11T00:00:00.000Z",
+          "updateDate": "2026-02-11T00:00:00.000Z",
+          "statusFunnel": "SUBSCRIBER",
+          "trainingProfile": "AI_BUSINESS_CONSULTANT_ACUMATICA_FC",
+          "experienceLevel": "INTERN",
+          "linkedinStatus": "NO_LINKEDIN",
+          "linkedinPrimaryContactId": null,
+          "sourcePlatform": "LINKEDIN",
+          "referredByEmployeeName": "",
+          "status": "NEW",
+          "trackId": "TA008_LEADGEN_AUTOMATION",
+          "connectionSent": true,
+          "connectionAccepted": false,
+          "connectionAcceptedDatetime": null,
+          "linkedinProviderId": "ACoAAD8xxVwBKDTms9daIwrnNvWYPW_5x7eJx6E",
+          "linkedinInvitationId": "7428024214030573568",
+          "connectionSentDateTime": "2026-02-13T12:07:00.964Z"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Get All Linkedin Owner Accounts": {
+      "main": [
+        [
+          {
+            "node": "Compute Remaining Per Account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Remaining Per Account": {
+      "main": [
+        [
+          {
+            "node": "Get Candidates to Send Connection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candidates to Send Connection": {
+      "main": [
+        [
+          {
+            "node": "Allocate Candidates to Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Allocate Candidates to Accounts": {
+      "main": [
+        [
+          {
+            "node": "Split Profile Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Profile Batch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Unipile - Get provider_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unipile - Get provider_id": {
+      "main": [
+        [
+          {
+            "node": "Unipile - Send Connection Invite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unipile - Send Connection Invite": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Random Wait 60-120",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Update Learner (Invite Sent)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Random Wait 60-120",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Random Wait 60-120": {
+      "main": [
+        [
+          {
+            "node": "Split Profile Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Learner (Invite Sent)": {
+      "main": [
+        [
+          {
+            "node": "Update Connection Limit On Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get All Linkedin Owner Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get All Linkedin Owner Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Connection Limit On Accounts": {
+      "main": [
+        [
+          {
+            "node": "Random Wait 60-120",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": false
+  },
+  "versionId": "370c5af1-5d1d-4a5f-9fbf-0010eaddcfcc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a03c7678428ef19ededbf912f16f7d5798ec7b9ab4c17f2a2def6a9e791e7215"
+  },
+  "id": "PXebBbJBk7A0ivYb",
+  "tags": [
+    {
+      "updatedAt": "2025-10-06T19:07:25.708Z",
+      "createdAt": "2025-10-06T19:07:25.708Z",
+      "id": "xprGHKieQRy6eoij",
+      "name": "LinkedIn"
+    },
+    {
+      "updatedAt": "2025-10-22T16:37:39.789Z",
+      "createdAt": "2025-10-22T16:37:39.789Z",
+      "id": "xwcs0U3vFJg13UcL",
+      "name": "leads"
+    }
+  ]
+}

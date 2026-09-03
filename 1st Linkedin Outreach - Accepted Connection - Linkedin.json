@@ -1,0 +1,2456 @@
+{
+  "name": "1st Linkedin Outreach - Accepted Connection - Linkedin",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/unipile/new-relation",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        368,
+        80
+      ],
+      "id": "91d3ad30-8590-4670-89b9-56a7efc10d7e",
+      "name": "New Relation Event Webhook",
+      "webhookId": "de89ca9f-ccd1-4e06-bc74-f48ecc856cf4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8b9d9e05-a9ed-4c90-9dd8-ed5fea11c660",
+              "leftValue": "={{ $json.body.event }}",
+              "rightValue": "=new_relation",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        592,
+        80
+      ],
+      "id": "65323810-86a1-4031-8746-8496c3ce2335",
+      "name": "Is New Relation?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Expected keys from Unipile webhook (new_relation)\nconst body = $('New Relation Event Webhook').first().json.body\n\nconst accountId = body.account_id || body.accountId;\nconst userProviderId = body.user_provider_id || body.userProviderId;\nconst fullName = body.user_full_name || body.userFullName || \"\";\nconst publicIdentifier = body.user_public_identifier || body.userPublicIdentifier || \"\";\nconst profileUrl = body.user_profile_url || body.userProfileUrl || \"\";\n\nconst firstName = fullName.trim().split(\" \")[0] || \"\";\n\nif (!accountId || !userProviderId) {\n  throw new Error(\"Webhook payload missing account_id or user_provider_id.\");\n}\n\nreturn [{\n  json: {\n    accountId,          // sender account (the LinkedIn profile that got the connection)\n    userProviderId,     // receiver provider_id\n    fullName,\n    firstName,\n    publicIdentifier,\n    profileUrl,\n    rawWebhook: body\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        80
+      ],
+      "id": "d06ae4b9-f550-4ddc-9a0d-800c24e31a17",
+      "name": "Normalize Payload"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "value": "workspace_13mbc2c4oiu70a17e1h9z0mxn",
+          "mode": "list",
+          "cachedResultName": "workspace_13mbc2c4oiu70a17e1h9z0mxn"
+        },
+        "table": {
+          "__rl": true,
+          "value": "_learner",
+          "mode": "list",
+          "cachedResultName": "_learner"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "connectionAccepted": true,
+            "connectionAcceptedDatetime": "={{ $now }}",
+            "linkedinProviderId": "={{ $json.body.user_provider_id }}"
+          },
+          "matchingColumns": [
+            "linkedinProviderId"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "createdAt",
+              "displayName": "createdAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updatedAt",
+              "displayName": "updatedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "deletedAt",
+              "displayName": "deletedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "createdBySource",
+              "displayName": "createdBySource",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "EMAIL",
+                  "value": "EMAIL"
+                },
+                {
+                  "name": "CALENDAR",
+                  "value": "CALENDAR"
+                },
+                {
+                  "name": "WORKFLOW",
+                  "value": "WORKFLOW"
+                },
+                {
+                  "name": "API",
+                  "value": "API"
+                },
+                {
+                  "name": "IMPORT",
+                  "value": "IMPORT"
+                },
+                {
+                  "name": "MANUAL",
+                  "value": "MANUAL"
+                },
+                {
+                  "name": "SYSTEM",
+                  "value": "SYSTEM"
+                },
+                {
+                  "name": "WEBHOOK",
+                  "value": "WEBHOOK"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "createdByWorkspaceMemberId",
+              "displayName": "createdByWorkspaceMemberId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "createdByName",
+              "displayName": "createdByName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "createdByContext",
+              "displayName": "createdByContext",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "position",
+              "displayName": "position",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "searchVector",
+              "displayName": "searchVector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "profileUrlPrimaryLinkLabel",
+              "displayName": "profileUrlPrimaryLinkLabel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "profileUrlPrimaryLinkUrl",
+              "displayName": "profileUrlPrimaryLinkUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "profileUrlSecondaryLinks",
+              "displayName": "profileUrlSecondaryLinks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "emailPrimaryEmail",
+              "displayName": "emailPrimaryEmail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "emailAdditionalEmails",
+              "displayName": "emailAdditionalEmails",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contactNumberPrimaryPhoneNumber",
+              "displayName": "contactNumberPrimaryPhoneNumber",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contactNumberPrimaryPhoneCountryCode",
+              "displayName": "contactNumberPrimaryPhoneCountryCode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contactNumberPrimaryPhoneCallingCode",
+              "displayName": "contactNumberPrimaryPhoneCallingCode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contactNumberAdditionalPhones",
+              "displayName": "contactNumberAdditionalPhones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "currentRole",
+              "displayName": "currentRole",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yearsOfExperience",
+              "displayName": "yearsOfExperience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "companyName",
+              "displayName": "companyName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "companyUrlPrimaryLinkLabel",
+              "displayName": "companyUrlPrimaryLinkLabel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "companyUrlPrimaryLinkUrl",
+              "displayName": "companyUrlPrimaryLinkUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "companyUrlSecondaryLinks",
+              "displayName": "companyUrlSecondaryLinks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "workingStatus",
+              "displayName": "workingStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "trackName",
+              "displayName": "trackName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "owner",
+              "displayName": "owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "toolsUsed",
+              "displayName": "toolsUsed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "targetProductServices",
+              "displayName": "targetProductServices",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "course",
+              "displayName": "course",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "learnerOwnerId",
+              "displayName": "learnerOwnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "notesOnCandidate",
+              "displayName": "notesOnCandidate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "raw",
+              "displayName": "raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "BEGINNER",
+                  "value": "BEGINNER"
+                },
+                {
+                  "name": "INTERMEDIATE",
+                  "value": "INTERMEDIATE"
+                },
+                {
+                  "name": "ADVANCED",
+                  "value": "ADVANCED"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "createdDate",
+              "displayName": "createdDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updateDate",
+              "displayName": "updateDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "statusFunnel",
+              "displayName": "statusFunnel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "SUBSCRIBER",
+                  "value": "SUBSCRIBER"
+                },
+                {
+                  "name": "SUSPECT",
+                  "value": "SUSPECT"
+                },
+                {
+                  "name": "LEAD",
+                  "value": "LEAD"
+                },
+                {
+                  "name": "MQL",
+                  "value": "MQL"
+                },
+                {
+                  "name": "SQL",
+                  "value": "SQL"
+                },
+                {
+                  "name": "CUSTOMER",
+                  "value": "CUSTOMER"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "trainingProfile",
+              "displayName": "trainingProfile",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "AI_BUSINESS_CONSULTANT_ACUMATICA_FC",
+                  "value": "AI_BUSINESS_CONSULTANT_ACUMATICA_FC"
+                },
+                {
+                  "name": "AI_ERP_DEVELOPER_ACUMATICA_TC",
+                  "value": "AI_ERP_DEVELOPER_ACUMATICA_TC"
+                },
+                {
+                  "name": "AI_FULL_STACK_DEVELOPER",
+                  "value": "AI_FULL_STACK_DEVELOPER"
+                },
+                {
+                  "name": "AI_AGENT_ENGINEER",
+                  "value": "AI_AGENT_ENGINEER"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "experienceLevel",
+              "displayName": "experienceLevel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "INTERN",
+                  "value": "INTERN"
+                },
+                {
+                  "name": "ENTRY_LEVEL_2_YEARS",
+                  "value": "ENTRY_LEVEL_2_YEARS"
+                },
+                {
+                  "name": "MID_LEVEL_2_5_YEARS",
+                  "value": "MID_LEVEL_2_5_YEARS"
+                },
+                {
+                  "name": "SENIOR_LEVEL_5_YEARS",
+                  "value": "SENIOR_LEVEL_5_YEARS"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "linkedinStatus",
+              "displayName": "linkedinStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "OPT1ST_DEGREE",
+                  "value": "OPT1ST_DEGREE"
+                },
+                {
+                  "name": "OPT2ND_DEGREE",
+                  "value": "OPT2ND_DEGREE"
+                },
+                {
+                  "name": "OPT3RD_DEGREE",
+                  "value": "OPT3RD_DEGREE"
+                },
+                {
+                  "name": "NO_LINKEDIN",
+                  "value": "NO_LINKEDIN"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "linkedinPrimaryContactId",
+              "displayName": "linkedinPrimaryContactId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sourcePlatform",
+              "displayName": "sourcePlatform",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "FACEBOOK",
+                  "value": "FACEBOOK"
+                },
+                {
+                  "name": "INDEED",
+                  "value": "INDEED"
+                },
+                {
+                  "name": "INSTAGRAM",
+                  "value": "INSTAGRAM"
+                },
+                {
+                  "name": "LINKEDIN",
+                  "value": "LINKEDIN"
+                },
+                {
+                  "name": "FORCE_MULTIPLIER",
+                  "value": "FORCE_MULTIPLIER"
+                },
+                {
+                  "name": "LINKEDIN_SALES_NAVIGATOR",
+                  "value": "LINKEDIN_SALES_NAVIGATOR"
+                },
+                {
+                  "name": "NAUKRI",
+                  "value": "NAUKRI"
+                },
+                {
+                  "name": "QUORA",
+                  "value": "QUORA"
+                },
+                {
+                  "name": "REDDIT",
+                  "value": "REDDIT"
+                },
+                {
+                  "name": "TWITTER",
+                  "value": "TWITTER"
+                },
+                {
+                  "name": "HR_DATABASE",
+                  "value": "HR_DATABASE"
+                },
+                {
+                  "name": "WHATSAPP",
+                  "value": "WHATSAPP"
+                },
+                {
+                  "name": "INTERNAL_EMPLOYEE_REFERENCE",
+                  "value": "INTERNAL_EMPLOYEE_REFERENCE"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "referredByEmployeeName",
+              "displayName": "referredByEmployeeName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "NOT_CONTACTED",
+                  "value": "NOT_CONTACTED"
+                },
+                {
+                  "name": "SUSPECT_INTERESTED",
+                  "value": "SUSPECT_INTERESTED"
+                },
+                {
+                  "name": "SUSPECT_NOT_INTERESTED",
+                  "value": "SUSPECT_NOT_INTERESTED"
+                },
+                {
+                  "name": "NO_RESPONSE",
+                  "value": "NO_RESPONSE"
+                },
+                {
+                  "name": "NEW",
+                  "value": "NEW"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "trackId",
+              "displayName": "trackId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "TA001_GROUP_MEMBER_SCRAPER",
+                  "value": "TA001_GROUP_MEMBER_SCRAPER"
+                },
+                {
+                  "name": "TA002_CONNECTION_S_CONNECTION_SIMILAR_PROFILE",
+                  "value": "TA002_CONNECTION_S_CONNECTION_SIMILAR_PROFILE"
+                },
+                {
+                  "name": "TA003_HR_DATABASE",
+                  "value": "TA003_HR_DATABASE"
+                },
+                {
+                  "name": "TA004_KEYWORD_SEARCH_COURSE_ON_GENERAL_SEARCH",
+                  "value": "TA004_KEYWORD_SEARCH_COURSE_ON_GENERAL_SEARCH"
+                },
+                {
+                  "name": "TA005_PAGES_ALUMINI",
+                  "value": "TA005_PAGES_ALUMINI"
+                },
+                {
+                  "name": "TA006_JOB_POSTING_RESPONSES",
+                  "value": "TA006_JOB_POSTING_RESPONSES"
+                },
+                {
+                  "name": "TA007_LEARNER_REFERENCE",
+                  "value": "TA007_LEARNER_REFERENCE"
+                },
+                {
+                  "name": "TA008_LEADGEN_AUTOMATION",
+                  "value": "TA008_LEADGEN_AUTOMATION"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "connectionSent",
+              "displayName": "connectionSent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "connectionAccepted",
+              "displayName": "connectionAccepted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "connectionAcceptedDatetime",
+              "displayName": "connectionAcceptedDatetime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedinProviderId",
+              "displayName": "linkedinProviderId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "linkedinInvitationId",
+              "displayName": "linkedinInvitationId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "connectionSentDateTime",
+              "displayName": "connectionSentDateTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "firstMessageSent",
+              "displayName": "firstMessageSent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "firstMessageSentDateTime",
+              "displayName": "firstMessageSentDateTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "outputColumns": [
+            "firstMessageSent"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        816,
+        80
+      ],
+      "id": "88402422-6c75-4edc-be99-938a36efea96",
+      "name": "Mark Accepted in Learner",
+      "credentials": {
+        "postgres": {
+          "id": "ChaRiXvzj9H5wZtz",
+          "name": "Nebula PGSQL Account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api30.unipile.com:16038/api/v1/chats",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "attendees_ids",
+              "value": "={{ $('Normalize Payload').item.json.userProviderId }}"
+            },
+            {
+              "name": "account_id",
+              "value": "={{ $('Normalize Payload').item.json.accountId }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.output[0].content[0].text }}"
+            },
+            {
+              "name": "api",
+              "value": "classic"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2288,
+        80
+      ],
+      "id": "167ba4ba-54b1-4918-b1f9-2a021d34defb",
+      "name": "Unipile - Send Message",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zno6AeiCYvMjHr9j",
+          "name": "Unipile Account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4e3d0676-50ef-452f-a1de-98158754d4b7",
+              "leftValue": "={{ $json.object }}",
+              "rightValue": "=ChatStarted",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2512,
+        80
+      ],
+      "id": "a59b4c4a-109f-4218-913f-4aedf9a6b382",
+      "name": "Message Sent Successfully?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "value": "workspace_13mbc2c4oiu70a17e1h9z0mxn",
+          "mode": "list",
+          "cachedResultName": "workspace_13mbc2c4oiu70a17e1h9z0mxn"
+        },
+        "table": {
+          "__rl": true,
+          "value": "_learner",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "linkedinProviderId": "={{ $('Normalize Payload').item.json.userProviderId }}",
+            "updatedAt": "={{ $now }}",
+            "message": "={{ $('AI - Generate Outreach Message').item.json.output[0].content[0].text }}",
+            "firstMessageSentDateTime": "={{ $now }}"
+          },
+          "matchingColumns": [
+            "linkedinProviderId"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "createdAt",
+              "displayName": "createdAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updatedAt",
+              "displayName": "updatedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "deletedAt",
+              "displayName": "deletedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "createdBySource",
+              "displayName": "createdBySource",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "EMAIL",
+                  "value": "EMAIL"
+                },
+                {
+                  "name": "CALENDAR",
+                  "value": "CALENDAR"
+                },
+                {
+                  "name": "WORKFLOW",
+                  "value": "WORKFLOW"
+                },
+                {
+                  "name": "API",
+                  "value": "API"
+                },
+                {
+                  "name": "IMPORT",
+                  "value": "IMPORT"
+                },
+                {
+                  "name": "MANUAL",
+                  "value": "MANUAL"
+                },
+                {
+                  "name": "SYSTEM",
+                  "value": "SYSTEM"
+                },
+                {
+                  "name": "WEBHOOK",
+                  "value": "WEBHOOK"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "createdByWorkspaceMemberId",
+              "displayName": "createdByWorkspaceMemberId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "createdByName",
+              "displayName": "createdByName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "createdByContext",
+              "displayName": "createdByContext",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "position",
+              "displayName": "position",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "searchVector",
+              "displayName": "searchVector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "profileUrlPrimaryLinkLabel",
+              "displayName": "profileUrlPrimaryLinkLabel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "profileUrlPrimaryLinkUrl",
+              "displayName": "profileUrlPrimaryLinkUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "profileUrlSecondaryLinks",
+              "displayName": "profileUrlSecondaryLinks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "emailPrimaryEmail",
+              "displayName": "emailPrimaryEmail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "emailAdditionalEmails",
+              "displayName": "emailAdditionalEmails",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contactNumberPrimaryPhoneNumber",
+              "displayName": "contactNumberPrimaryPhoneNumber",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contactNumberPrimaryPhoneCountryCode",
+              "displayName": "contactNumberPrimaryPhoneCountryCode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contactNumberPrimaryPhoneCallingCode",
+              "displayName": "contactNumberPrimaryPhoneCallingCode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contactNumberAdditionalPhones",
+              "displayName": "contactNumberAdditionalPhones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "currentRole",
+              "displayName": "currentRole",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yearsOfExperience",
+              "displayName": "yearsOfExperience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "companyName",
+              "displayName": "companyName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "companyUrlPrimaryLinkLabel",
+              "displayName": "companyUrlPrimaryLinkLabel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "companyUrlPrimaryLinkUrl",
+              "displayName": "companyUrlPrimaryLinkUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "companyUrlSecondaryLinks",
+              "displayName": "companyUrlSecondaryLinks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "workingStatus",
+              "displayName": "workingStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "trackName",
+              "displayName": "trackName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "owner",
+              "displayName": "owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "toolsUsed",
+              "displayName": "toolsUsed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "targetProductServices",
+              "displayName": "targetProductServices",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "course",
+              "displayName": "course",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "learnerOwnerId",
+              "displayName": "learnerOwnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "notesOnCandidate",
+              "displayName": "notesOnCandidate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "raw",
+              "displayName": "raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "BEGINNER",
+                  "value": "BEGINNER"
+                },
+                {
+                  "name": "INTERMEDIATE",
+                  "value": "INTERMEDIATE"
+                },
+                {
+                  "name": "ADVANCED",
+                  "value": "ADVANCED"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "createdDate",
+              "displayName": "createdDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updateDate",
+              "displayName": "updateDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "statusFunnel",
+              "displayName": "statusFunnel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "SUBSCRIBER",
+                  "value": "SUBSCRIBER"
+                },
+                {
+                  "name": "SUSPECT",
+                  "value": "SUSPECT"
+                },
+                {
+                  "name": "LEAD",
+                  "value": "LEAD"
+                },
+                {
+                  "name": "MQL",
+                  "value": "MQL"
+                },
+                {
+                  "name": "SQL",
+                  "value": "SQL"
+                },
+                {
+                  "name": "CUSTOMER",
+                  "value": "CUSTOMER"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "trainingProfile",
+              "displayName": "trainingProfile",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "AI_BUSINESS_CONSULTANT_ACUMATICA_FC",
+                  "value": "AI_BUSINESS_CONSULTANT_ACUMATICA_FC"
+                },
+                {
+                  "name": "AI_ERP_DEVELOPER_ACUMATICA_TC",
+                  "value": "AI_ERP_DEVELOPER_ACUMATICA_TC"
+                },
+                {
+                  "name": "AI_FULL_STACK_DEVELOPER",
+                  "value": "AI_FULL_STACK_DEVELOPER"
+                },
+                {
+                  "name": "AI_AGENT_ENGINEER",
+                  "value": "AI_AGENT_ENGINEER"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "experienceLevel",
+              "displayName": "experienceLevel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "INTERN",
+                  "value": "INTERN"
+                },
+                {
+                  "name": "ENTRY_LEVEL_2_YEARS",
+                  "value": "ENTRY_LEVEL_2_YEARS"
+                },
+                {
+                  "name": "MID_LEVEL_2_5_YEARS",
+                  "value": "MID_LEVEL_2_5_YEARS"
+                },
+                {
+                  "name": "SENIOR_LEVEL_5_YEARS",
+                  "value": "SENIOR_LEVEL_5_YEARS"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "linkedinStatus",
+              "displayName": "linkedinStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "OPT1ST_DEGREE",
+                  "value": "OPT1ST_DEGREE"
+                },
+                {
+                  "name": "OPT2ND_DEGREE",
+                  "value": "OPT2ND_DEGREE"
+                },
+                {
+                  "name": "OPT3RD_DEGREE",
+                  "value": "OPT3RD_DEGREE"
+                },
+                {
+                  "name": "NO_LINKEDIN",
+                  "value": "NO_LINKEDIN"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "linkedinPrimaryContactId",
+              "displayName": "linkedinPrimaryContactId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sourcePlatform",
+              "displayName": "sourcePlatform",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "FACEBOOK",
+                  "value": "FACEBOOK"
+                },
+                {
+                  "name": "INDEED",
+                  "value": "INDEED"
+                },
+                {
+                  "name": "INSTAGRAM",
+                  "value": "INSTAGRAM"
+                },
+                {
+                  "name": "LINKEDIN",
+                  "value": "LINKEDIN"
+                },
+                {
+                  "name": "FORCE_MULTIPLIER",
+                  "value": "FORCE_MULTIPLIER"
+                },
+                {
+                  "name": "LINKEDIN_SALES_NAVIGATOR",
+                  "value": "LINKEDIN_SALES_NAVIGATOR"
+                },
+                {
+                  "name": "NAUKRI",
+                  "value": "NAUKRI"
+                },
+                {
+                  "name": "QUORA",
+                  "value": "QUORA"
+                },
+                {
+                  "name": "REDDIT",
+                  "value": "REDDIT"
+                },
+                {
+                  "name": "TWITTER",
+                  "value": "TWITTER"
+                },
+                {
+                  "name": "HR_DATABASE",
+                  "value": "HR_DATABASE"
+                },
+                {
+                  "name": "WHATSAPP",
+                  "value": "WHATSAPP"
+                },
+                {
+                  "name": "INTERNAL_EMPLOYEE_REFERENCE",
+                  "value": "INTERNAL_EMPLOYEE_REFERENCE"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "referredByEmployeeName",
+              "displayName": "referredByEmployeeName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "NOT_CONTACTED",
+                  "value": "NOT_CONTACTED"
+                },
+                {
+                  "name": "SUSPECT_INTERESTED",
+                  "value": "SUSPECT_INTERESTED"
+                },
+                {
+                  "name": "SUSPECT_NOT_INTERESTED",
+                  "value": "SUSPECT_NOT_INTERESTED"
+                },
+                {
+                  "name": "NO_RESPONSE",
+                  "value": "NO_RESPONSE"
+                },
+                {
+                  "name": "NEW",
+                  "value": "NEW"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "trackId",
+              "displayName": "trackId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "TA001_GROUP_MEMBER_SCRAPER",
+                  "value": "TA001_GROUP_MEMBER_SCRAPER"
+                },
+                {
+                  "name": "TA002_CONNECTION_S_CONNECTION_SIMILAR_PROFILE",
+                  "value": "TA002_CONNECTION_S_CONNECTION_SIMILAR_PROFILE"
+                },
+                {
+                  "name": "TA003_HR_DATABASE",
+                  "value": "TA003_HR_DATABASE"
+                },
+                {
+                  "name": "TA004_KEYWORD_SEARCH_COURSE_ON_GENERAL_SEARCH",
+                  "value": "TA004_KEYWORD_SEARCH_COURSE_ON_GENERAL_SEARCH"
+                },
+                {
+                  "name": "TA005_PAGES_ALUMINI",
+                  "value": "TA005_PAGES_ALUMINI"
+                },
+                {
+                  "name": "TA006_JOB_POSTING_RESPONSES",
+                  "value": "TA006_JOB_POSTING_RESPONSES"
+                },
+                {
+                  "name": "TA007_LEARNER_REFERENCE",
+                  "value": "TA007_LEARNER_REFERENCE"
+                },
+                {
+                  "name": "TA008_LEADGEN_AUTOMATION",
+                  "value": "TA008_LEADGEN_AUTOMATION"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "connectionSent",
+              "displayName": "connectionSent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "connectionAccepted",
+              "displayName": "connectionAccepted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "connectionAcceptedDatetime",
+              "displayName": "connectionAcceptedDatetime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "linkedinProviderId",
+              "displayName": "linkedinProviderId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "linkedinInvitationId",
+              "displayName": "linkedinInvitationId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "connectionSentDateTime",
+              "displayName": "connectionSentDateTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "firstMessageSent",
+              "displayName": "firstMessageSent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "firstMessageSentDateTime",
+              "displayName": "firstMessageSentDateTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2736,
+        80
+      ],
+      "id": "6b76c7a5-732c-491a-b078-b93ff5b1ad90",
+      "name": "Update Learner Message Sent",
+      "credentials": {
+        "postgres": {
+          "id": "ChaRiXvzj9H5wZtz",
+          "name": "Nebula PGSQL Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": "={{ 120 + Math.floor(Math.random() * 61)\n }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1488,
+        80
+      ],
+      "id": "a36e5ff5-7532-420e-931c-577064bdcdd2",
+      "name": "Random Wait 120-180",
+      "webhookId": "0d0cc05e-265d-4ca4-aca4-542c29aa7056"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "02d068a2-908f-4954-b112-bae59ebffe42",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        80
+      ],
+      "id": "4e8f24cd-4d9c-4c3b-9c32-f5da634d0b1e",
+      "name": "Is Message Already Sent?"
+    },
+    {
+      "parameters": {
+        "url": "=https://api30.unipile.com:16038/api/v1/users/{{ $json.userProviderId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "account_id",
+              "value": "={{ $json.accountId }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1712,
+        80
+      ],
+      "id": "207582db-72a5-4add-b765-f9f74cc19076",
+      "name": "Unipile - Get User Profile",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zno6AeiCYvMjHr9j",
+          "name": "Unipile Account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "GPT-5.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Candidate First Name: {{ $json.first_name }}\nHeadline: {{$json.headline}}\nLocation: {{$json.location}}\n\nCompany Hiring: Tayana Academy\n\nRoles:\n1) AI-Full Stack Developer (APIs, JavaScript frameworks, AI-integrated workflows)\n2) AI-Automation Engineering (Automation systems, APIs, AI workflows)\n\nChoose the most relevant role based on the candidate's profile.\n\nWrite the message now in the required format to send him on linkedin message."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "instructions": "You are a senior tech recruiter.\n\nWrite a LinkedIn outreach message that MUST follow this exact format and rhythm:\n\nFORMAT (exactly 5 short paragraphs):\n1) \"Hi {FirstName},\"\n2) \"I came across your profile and noticed {specific observation from headline}.\"\n3) \"I’m hiring at Tayana Academy for a {ROLE} role (remote) focused on {2-3 relevant technologies}.\"\n4) \"{One reason their background fits in 1 sentence}.\"\n5) \"Would you be open to a quick chat to explore this further?\"\n\nSTYLE RULES:\n- Keep each paragraph 1 sentence only (except paragraph 2 can be 2 sentences max).\n- Total length: under 120 words.\n- No emojis.\n- No buzzwords or clichés.\n- No bold, no links.\n- Sound natural and conversational, like the example.\n- If graduation year/college is not clearly present in the headline, DO NOT invent it.\n\nROLE CHOICE:\nPick ONE role based on the profile:\n- AI-Full Stack Developer\n- AI-Automation Engineering\n\nOutput ONLY the message text.",
+          "maxTokens": 220,
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1936,
+        80
+      ],
+      "id": "e48415fb-410f-468b-8553-b4896af7f84d",
+      "name": "AI - Generate Outreach Message",
+      "credentials": {
+        "openAiApi": {
+          "id": "L6vvTsd9hCgZlArz",
+          "name": "AR Portal OpenAI Key"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "# **LinkedIn – Accepted Connection → First Outreach Automation**\n\n## This workflow automatically sends a personalized first LinkedIn message when a connection request is accepted.\n\nIt:\n• Detects accepted connection via Unipile webhook\n• Updates Nebula CRM\n• Waits naturally (human-like delay)\n• Fetches LinkedIn profile details\n• Generates AI-personalized outreach\n• Sends message via Unipile\n• Updates CRM with message status\n\nFully automated. No manual follow-up required.\n",
+        "height": 656,
+        "width": 3184,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -144,
+        -336
+      ],
+      "typeVersion": 1,
+      "id": "00099fb9-e97c-4379-ab3b-469079a5cbbd",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Phase 1 – Detection & CRM Update\n\n• Receives webhook from Unipile when connection is accepted\n• Validates event type (new_relation)\n• Marks learner as “Connection Accepted” in Nebula\n• Stores provider ID for further actions\n\nPurpose: Ensure CRM is always in sync with LinkedIn status.\n",
+        "height": 416,
+        "width": 688,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        288,
+        -144
+      ],
+      "typeVersion": 1,
+      "id": "2ba445b4-c273-485a-8f42-d70a4546f4b2",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Phase 2 – AI Personalization EngineUpdate\n\n• Prevents duplicate first message\n• Normalizes webhook data\n• Waits 120–180 seconds (human-like behavior)\n• Fetches live LinkedIn profile details\n• Uses AI to generate personalized outreach",
+        "height": 416,
+        "width": 1200,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1008,
+        -144
+      ],
+      "typeVersion": 1,
+      "id": "2e1d9de1-1ff2-46e8-a03c-0953305e43d8",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "Message Style:\n• Under 120 words\n• Human tone\n• Profile-specific reference\n• Clear call-to-action\n• Mentions Tayana Academy\n\nPurpose: Send natural, relevant, high-conversion outreach.",
+        "height": 176,
+        "width": 448,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1728,
+        -128
+      ],
+      "typeVersion": 1,
+      "id": "6af6a0e4-6805-4a62-81d2-6a085ce3c513",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Phase 3 – Message Dispatch & Tracking\n\n\n• Sends AI-generated message from correct LinkedIn account\n• Confirms successful delivery\n• Updates CRM with:\n\n* firstMessageSent = true\n* message content\n* timestamp\n\nPurpose:\nFull tracking, auditability, and prevention of duplicate outreach.",
+        "height": 512,
+        "width": 736,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2224,
+        -240
+      ],
+      "typeVersion": 1,
+      "id": "d43c5248-1aef-4e87-9f3b-dc8773ad6f34",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## ⚙️  Important Notes\n\n• Only triggers on accepted connections\n• Never sends duplicate first message\n• Includes natural delay to reduce automation risk\n• Uses live profile data for personalization\n• CRM is source of truth for message state",
+        "height": 192,
+        "width": 368,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -96,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "bd9b594c-7598-4f3d-8da9-a47e43790443",
+      "name": "Sticky Note7"
+    }
+  ],
+  "pinData": {
+    "New Relation Event Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.tayana-solutions.com",
+            "x-real-ip": "49.43.43.61",
+            "x-forwarded-for": "49.43.43.61",
+            "x-forwarded-proto": "https",
+            "connection": "upgrade",
+            "content-length": "18",
+            "content-type": "application/json",
+            "user-agent": "PostmanRuntime/7.51.1",
+            "accept": "*/*",
+            "postman-token": "142926dd-f69b-41a1-ab1f-0862f3a9f392",
+            "accept-encoding": "gzip, deflate, br"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "event": "new_relation",
+            "account_id": "SDF4tGaPSPSzNe1D1xsOs",
+            "account_type": "LINKEDIN",
+            "webhook_name": "",
+            "user_full_name": "Julien Crépieux",
+            "user_provider_id": "ACoAAAh_Ffqss54sqAGQOD8u7sl5of04y9_3AwyM",
+            "user_public_identifier": "julien-crepieux",
+            "user_profile_url": "https://www.linkedin.com/in/julien-crepieux/",
+            "user_picture_url": "https://media.licdn.com/dms/image/v2/D56S3AQHfRb8KQLb56A/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/14545ssssdde=45465465456&v=beta&t=B_Tqss45Go_ETxNHWbK31fFbHGXjreE1dcW-1weM"
+          },
+          "webhookUrl": "https://n8n.tayana-solutions.com/webhook-test/unipile/new-relation",
+          "executionMode": "test"
+        }
+      }
+    ],
+    "Mark Accepted in Learner": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.tayana-solutions.com",
+            "x-real-ip": "49.43.43.61",
+            "x-forwarded-for": "49.43.43.61",
+            "x-forwarded-proto": "https",
+            "connection": "upgrade",
+            "content-length": "18",
+            "content-type": "application/json",
+            "user-agent": "PostmanRuntime/7.51.1",
+            "accept": "*/*",
+            "postman-token": "142926dd-f69b-41a1-ab1f-0862f3a9f392",
+            "accept-encoding": "gzip, deflate, br"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "event": "new_relation",
+            "account_id": "SDF4tGaPSPSzNe1D1xsOs",
+            "account_type": "LINKEDIN",
+            "webhook_name": "",
+            "user_full_name": "Julien Crépieux",
+            "user_provider_id": "ACoAAAh_Ffqss54sqAGQOD8u7sl5of04y9_3AwyM",
+            "user_public_identifier": "julien-crepieux",
+            "user_profile_url": "https://www.linkedin.com/in/julien-crepieux/",
+            "user_picture_url": "https://media.licdn.com/dms/image/v2/D56S3AQHfRb8KQLb56A/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/14545ssssdde=45465465456&v=beta&t=B_Tqss45Go_ETxNHWbK31fFbHGXjreE1dcW-1weM"
+          },
+          "webhookUrl": "https://n8n.tayana-solutions.com/webhook-test/unipile/new-relation",
+          "executionMode": "test"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Random Wait 120-180": [
+      {
+        "json": {
+          "accountId": "Y6p5W8lQRZ6t4cuUGxj3bg",
+          "userProviderId": "ACoAADVoemAB6TOfPAHjSVCq8D24qOSaxTMlljY",
+          "fullName": "Julien Crépieux",
+          "firstName": "Julien",
+          "publicIdentifier": "julien-crepieux",
+          "profileUrl": "https://www.linkedin.com/in/julien-crepieux/",
+          "rawWebhook": {
+            "event": "new_relation",
+            "account_id": "SDF4tGaPSPSzNe1D1xsOs",
+            "account_type": "LINKEDIN",
+            "webhook_name": "",
+            "user_full_name": "Julien Crépieux",
+            "user_provider_id": "ACoAAAh_Ffqss54sqAGQOD8u7sl5of04y9_3AwyM",
+            "user_public_identifier": "julien-crepieux",
+            "user_profile_url": "https://www.linkedin.com/in/julien-crepieux/",
+            "user_picture_url": "https://media.licdn.com/dms/image/v2/D56S3AQHfRb8KQLb56A/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/14545ssssdde=45465465456&v=beta&t=B_Tqss45Go_ETxNHWbK31fFbHGXjreE1dcW-1weM"
+          }
+        }
+      }
+    ],
+    "Unipile - Get User Profile": [
+      {
+        "json": {
+          "object": "UserProfile",
+          "provider": "LINKEDIN",
+          "provider_id": "ACoAADVoemAB6TOfPAHjSVCq8D24qOSaxTMlljY",
+          "public_identifier": "swapnil-mandloi",
+          "member_urn": "896039520",
+          "first_name": "Swapnil",
+          "last_name": "Mandloi",
+          "headline": "AI Automation Engineer | n8n & Make.com Specialist | Building Voice Agents & Lead Gen Workflows | Data Analyst\nMBA – Finance, NIT Bhopal | Lifelong Learner",
+          "primary_locale": {
+            "country": "US",
+            "language": "en"
+          },
+          "is_open_profile": false,
+          "is_premium": true,
+          "is_influencer": false,
+          "is_creator": true,
+          "is_relationship": true,
+          "network_distance": "FIRST_DEGREE",
+          "is_self": false,
+          "websites": [],
+          "follower_count": 2804,
+          "connections_count": 2642,
+          "location": "Bhopal, Madhya Pradesh, India",
+          "contact_info": {
+            "emails": [
+              "Swapnilmandloi7@gmail.com"
+            ],
+            "phones": [
+              "9575770206"
+            ]
+          },
+          "birthdate": {
+            "month": 6,
+            "day": 10
+          },
+          "profile_picture_url": "https://media.licdn.com/dms/image/v2/D4D03AQHy81mWZ_kTdw/profile-displayphoto-shrink_100_100/B4DZTroHAyHkAU-/0/1739119948476?e=1772668800&v=beta&t=-jAI_ANlUpxLsiVr__mWOZGwQg_MAgXWmD8lFye3y4s",
+          "profile_picture_url_large": "https://media.licdn.com/dms/image/v2/D4D03AQHy81mWZ_kTdw/profile-displayphoto-shrink_800_800/B4DZTroHAyHkAc-/0/1739119948476?e=1772668800&v=beta&t=dDpjk_-Aqq0gDP2CEtFXz6l1ihBT8AmCy9YahXVq4_s",
+          "background_picture_url": "https://media.licdn.com/dms/image/v2/D4D16AQHX3paZqAc2Kg/profile-displaybackgroundimage-shrink_200_800/B4DZh0L7jGGQAU-/0/1754295942563?e=1772668800&v=beta&t=57g3mdmDUmlevIbE9M9Rlilh99qoVjj9NBu1lzRoJ4Y",
+          "pronoun": "He/Him",
+          "shared_connections_count": 57,
+          "creator_website": {
+            "url": "https://topmate.io/swapnil_mandloi/1476718",
+            "description": "topmate.io  "
+          },
+          "hashtags": [
+            "#datavisualization",
+            "#finance",
+            "#financialmodeling",
+            "#investmentstrategy",
+            "#riskmanagement"
+          ]
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "AI - Generate Outreach Message": [
+      {
+        "json": {
+          "output": [
+            {
+              "id": "msg_07cdbbf335210cae0069903fd00cac819486a62ebf7957d312",
+              "type": "message",
+              "status": "completed",
+              "content": [
+                {
+                  "type": "output_text",
+                  "annotations": [],
+                  "logprobs": [],
+                  "text": "Hi Swapnil,\n\nI came across your profile and noticed your focus on AI automation with n8n, Make.com, and voice agents.  \n\nI’m hiring at Tayana Academy for an AI-Automation Engineering role (remote) focused on automation systems, APIs, and AI workflows.  \n\nYour experience building lead gen workflows and voice agents aligns closely with how we’re designing our internal and client-facing automation stacks.  \n\nWould you be open to a quick chat to explore this further?"
+                }
+              ],
+              "role": "assistant"
+            }
+          ]
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Normalize Payload": [
+      {
+        "json": {
+          "accountId": "SDF4tGaPSPSzNe1D1xsOs",
+          "userProviderId": "ACoAAAh_Ffqss54sqAGQOD8u7sl5of04y9_3AwyM",
+          "fullName": "Julien Crépieux",
+          "firstName": "Julien",
+          "publicIdentifier": "julien-crepieux",
+          "profileUrl": "https://www.linkedin.com/in/julien-crepieux/",
+          "rawWebhook": {
+            "event": "new_relation",
+            "account_id": "SDF4tGaPSPSzNe1D1xsOs",
+            "account_type": "LINKEDIN",
+            "webhook_name": "",
+            "user_full_name": "Julien Crépieux",
+            "user_provider_id": "ACoAAAh_Ffqss54sqAGQOD8u7sl5of04y9_3AwyM",
+            "user_public_identifier": "julien-crepieux",
+            "user_profile_url": "https://www.linkedin.com/in/julien-crepieux/",
+            "user_picture_url": "https://media.licdn.com/dms/image/v2/D56S3AQHfRb8KQLb56A/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/14545ssssdde=45465465456&v=beta&t=B_Tqss45Go_ETxNHWbK31fFbHGXjreE1dcW-1weM"
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Unipile - Send Message": [
+      {
+        "json": {
+          "object": "ChatStarted",
+          "chat_id": "O4o2j8tTW2aZw1Y9ugnr2g",
+          "message_id": "hA22KRiMXkuM_TrbuW1bJQ"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "New Relation Event Webhook": {
+      "main": [
+        [
+          {
+            "node": "Is New Relation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is New Relation?": {
+      "main": [
+        [
+          {
+            "node": "Mark Accepted in Learner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Payload": {
+      "main": [
+        [
+          {
+            "node": "Random Wait 120-180",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unipile - Send Message": {
+      "main": [
+        [
+          {
+            "node": "Message Sent Successfully?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Sent Successfully?": {
+      "main": [
+        [
+          {
+            "node": "Update Learner Message Sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Update Learner Message Sent": {
+      "main": [
+        []
+      ]
+    },
+    "Random Wait 120-180": {
+      "main": [
+        [
+          {
+            "node": "Unipile - Get User Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Accepted in Learner": {
+      "main": [
+        [
+          {
+            "node": "Is Message Already Sent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Message Already Sent?": {
+      "main": [
+        [
+          {
+            "node": "Normalize Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unipile - Get User Profile": {
+      "main": [
+        [
+          {
+            "node": "AI - Generate Outreach Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI - Generate Outreach Message": {
+      "main": [
+        [
+          {
+            "node": "Unipile - Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7812e661-6f20-4815-8c59-e6a2e7c88da3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a03c7678428ef19ededbf912f16f7d5798ec7b9ab4c17f2a2def6a9e791e7215"
+  },
+  "id": "ZNnG0yNQAiVVorRp",
+  "tags": [
+    {
+      "updatedAt": "2025-11-13T13:06:56.236Z",
+      "createdAt": "2025-11-13T13:06:56.236Z",
+      "id": "DJQc47nwF4PO1np2",
+      "name": "tayana academy"
+    },
+    {
+      "updatedAt": "2025-10-06T19:07:25.708Z",
+      "createdAt": "2025-10-06T19:07:25.708Z",
+      "id": "xprGHKieQRy6eoij",
+      "name": "LinkedIn"
+    },
+    {
+      "updatedAt": "2025-10-22T16:37:39.789Z",
+      "createdAt": "2025-10-22T16:37:39.789Z",
+      "id": "xwcs0U3vFJg13UcL",
+      "name": "leads"
+    }
+  ]
+}

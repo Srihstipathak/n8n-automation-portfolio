@@ -1,0 +1,381 @@
+{
+  "name": "Interview reminder agent on email",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "workspace_8gtpr92wapmv5u0wujczthvf2",
+          "mode": "list",
+          "cachedResultName": "workspace_8gtpr92wapmv5u0wujczthvf2"
+        },
+        "table": {
+          "__rl": true,
+          "value": "_recruitmentAndHiring",
+          "mode": "list",
+          "cachedResultName": "_recruitmentAndHiring"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        224,
+        0
+      ],
+      "id": "62b88351-ec67-4a76-aacb-813c10c5a4fd",
+      "name": "Fetch Candidates from Recruitment DB1",
+      "credentials": {
+        "postgres": {
+          "id": "tecfzQiyDH0VGaOV",
+          "name": "Database- Nebula"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "=shuklashree2909@gmail.com",
+        "subject": "=Interview Reminder for {{ $json.jobProfileRole }} – Today",
+        "bodyContent": "=Hi {{ $json.name }},\n\nJust a quick reminder that your interview is scheduled for today.\n\nHere are the details:\nInterview Link: {{ $json.interviewRound1LinkPrimaryLinkUrl }}\n\nPlease be ready a few minutes before the scheduled time.  \nIf you have any questions or need help joining the call, feel free to reach out.\n\nAll the best for your interview.\n\nBest regards,  \nHR Team\nTayana Solutions\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        912,
+        224
+      ],
+      "id": "e0c29372-833b-48e4-8bd1-ac2ee176b8f1",
+      "name": "Send Interview Reminder – Outlook1",
+      "webhookId": "4dc136ff-a75b-40ba-a6cf-e483d601d972",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "UydbV4F9tRfS8MGV",
+          "name": "Shristi's - Outlook Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 21,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2366094e-ed5c-4624-b2ec-2cbb4758cc50",
+      "name": "Interview Reminder – Daily 8 AM Trigger1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get today's date in YYYY-MM-DD format (UTC)\nconst today = new Date().toISOString().split('T')[0];\n\nreturn items.filter(item => {\n  const interviewDate = item.json.interviewRound1Date;\n  const interviewLink = item.json.interviewRound1LinkPrimaryLinkUrl;\n\n  // Condition 1: Interview date must be today\n  if (!interviewDate || interviewDate.split('T')[0] !== today) {\n    return false;\n  }\n\n  // Condition 2: Interview link must exist and not be empty\n  if (!interviewLink || interviewLink.trim() === \"\") {\n    return false;\n  }\n\n  return true;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "9da346de-d7b8-4d88-a8a9-1ac3ce3a4dcf",
+      "name": "Filter Candidates – Interview Today (Round 1)1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1MzaAScgOkFvRrU7rk3uGxox97-NpVrWcqqDMX_T1NdU",
+          "mode": "list",
+          "cachedResultName": "Keywords",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MzaAScgOkFvRrU7rk3uGxox97-NpVrWcqqDMX_T1NdU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1868661085,
+          "mode": "list",
+          "cachedResultName": "Sheet4",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MzaAScgOkFvRrU7rk3uGxox97-NpVrWcqqDMX_T1NdU/edit#gid=1868661085"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "jobProfileRole",
+              "displayName": "jobProfileRole",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "interviewRound",
+              "displayName": "interviewRound",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "interviewDate",
+              "displayName": "interviewDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "interviewLink",
+              "displayName": "interviewLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "emailSent",
+              "displayName": "emailSent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "emailSentAt",
+              "displayName": "emailSentAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1344,
+        16
+      ],
+      "id": "fe2d258b-b476-4cf4-ae32-4e566e847853",
+      "name": "Append row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "scY6HrScCLGtZtd3",
+          "name": "Google Sheets account 18"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "499a5e37-a890-4e13-ae58-26955e1ebb7e",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "3a085709-fb43-407c-931d-828bcac9d6d5",
+              "name": "name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "d3814db9-3673-441c-b2e5-0146c8a9f175",
+              "name": "eMailIdPrimaryEmail",
+              "value": "={{ $json.eMailIdPrimaryEmail }}",
+              "type": "string"
+            },
+            {
+              "id": "73193d4b-565f-44d3-bb7f-d69e770a0002",
+              "name": "jobProfileRole",
+              "value": "={{ $json.jobProfileRole }}",
+              "type": "string"
+            },
+            {
+              "id": "e9fc7535-85e8-4450-a336-c6467fc7dff5",
+              "name": "interviewRound1Date",
+              "value": "={{ $json.interviewRound1Date }}",
+              "type": "string"
+            },
+            {
+              "id": "96d90e98-b7c1-44ed-9417-23b09e216eb5",
+              "name": "interviewRound1LinkPrimaryLinkUrl",
+              "value": "={{ $json.interviewRound1LinkPrimaryLinkUrl }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        0
+      ],
+      "id": "eb9a85b4-acc1-4f74-b302-af3d0cbe6287",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1120,
+        16
+      ],
+      "id": "4f910a0b-08cd-4342-8361-236df96cdcd3",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Fetch Candidates from Recruitment DB1": {
+      "main": [
+        [
+          {
+            "node": "Filter Candidates – Interview Today (Round 1)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Interview Reminder – Outlook1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Interview Reminder – Daily 8 AM Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Fetch Candidates from Recruitment DB1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Candidates – Interview Today (Round 1)1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet1": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Send Interview Reminder – Outlook1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "88545a14-f715-40f9-b1c7-51609337f0c3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a03c7678428ef19ededbf912f16f7d5798ec7b9ab4c17f2a2def6a9e791e7215"
+  },
+  "id": "LsOXNGJd3Ii1AAyc",
+  "tags": []
+}
