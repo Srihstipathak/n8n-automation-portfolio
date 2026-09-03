@@ -4,7 +4,7 @@ A comprehensive collection of production-ready automation workflows built with *
 
 ## 📋 Overview
 
-This portfolio showcases advanced automation solutions spanning **LinkedIn outreach**, **WhatsApp messaging**, **email automation**, **AI voice agents**, **influencer research**, and **competitive intelligence**. Each workflow integrates multiple platforms including Google Sheets, PostgreSQL databases, APIs, and AI services.
+This portfolio showcases advanced automation solutions spanning **LinkedIn outreach**, **WhatsApp messaging**, **email automation**, **AI voice agents**, **influencer research**, and **competitive intelligence**.
 
 **Tech Stack:**
 - **Platform:** n8n (Open-source workflow automation)
@@ -12,6 +12,21 @@ This portfolio showcases advanced automation solutions spanning **LinkedIn outre
 - **Databases:** PostgreSQL
 - **APIs:** Unipile, Retell AI, Facebook Graph API, Instagram Scraper
 - **Languages:** JavaScript (custom code nodes), SQL
+
+---
+
+## 📝 Recent Updates
+
+### Latest Commits
+- **[Sep 3, 2026]** - New files uploaded to repository (commit: cf2d99b)
+- **[Sep 3, 2026]** - Added comprehensive README documentation for n8n automation portfolio (commit: d85209b)
+- **[Sep 3, 2026]** - Initial project files uploaded (commit: 83e8bb5)
+
+### Project Status
+- ✅ Repository initialized and ready for development
+- ✅ Complete documentation added
+- ✅ Workflow files uploaded
+- 🚀 Production workflows in active use
 
 ---
 
@@ -214,9 +229,9 @@ Trigger → Get Contacts (Google Sheets) → Validate Contacts
 - Apify integration for Instagram profile scraping
 - Automatic niche classification using keywords
 - Multi-tier data extraction:
-  - Instagram profile metrics (followers, engagement)
-  - Post-level analytics (captions, hashtags, mentions, comments)
-  - Reel performance data
+   - Instagram profile metrics (followers, engagement)
+   - Post-level analytics (captions, hashtags, mentions, comments)
+   - Reel performance data
 - Data enrichment and categorization
 - Google Sheets export for qualified leads
 
@@ -254,9 +269,9 @@ Trigger → Get Influencer List → Loop Items → Parallel Processing:
 - Google Sheets competitor list management
 - Facebook Graph API for ad archives (v24.0)
 - Automated ad data collection:
-  - Creative bodies and titles
-  - Link captions and preview images
-  - Delivery dates (start & stop times)
+   - Creative bodies and titles
+   - Link captions and preview images
+   - Delivery dates (start & stop times)
 - HTML report generation with styled layout
 - Daily email delivery via Gmail
 - Preset: Yesterday's ads
@@ -562,4 +577,5 @@ This portfolio is for demonstration purposes. Customize and deploy according to 
 ---
 
 **Last Updated:** September 3, 2026  
-**Version:** 1.0.0
+**Version:** 1.0.1  
+**Repository Status:** Active & Maintained
